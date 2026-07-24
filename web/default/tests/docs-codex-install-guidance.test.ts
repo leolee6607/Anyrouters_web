@@ -5,6 +5,10 @@ const source = readFileSync(
   new URL('../src/features/docs/index.tsx', import.meta.url),
   'utf8'
 )
+const historyScript = readFileSync(
+  new URL('../../../router/install_scripts/codex-history.ps1', import.meta.url),
+  'utf8'
+)
 
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
@@ -121,6 +125,43 @@ test('Codex guides provide a validated, non-destructive return to official login
   expect(source).toContain(
     "{tool !== 'claude' && <CodexOfficialRestoreGuide />}"
   )
+})
+
+test('Codex history migration is optional, local, reversible, and transport-neutral', () => {
+  const guide = source.slice(
+    source.indexOf('function CodexHistoryGuide'),
+    source.indexOf('function ClaudeContextLimitFaq')
+  )
+
+  expect(source).toContain('Codex-聊天迁移')
+  expect(source).toContain('https://anyrouters.com/install/codex-history.ps1')
+  expect(guide).toContain('Windows 本地一次性迁移')
+  expect(guide).toContain('不是把 OpenAI 云端聊天上传到 AnyRouters')
+  expect(guide).toMatch(
+    /不修改消息正文、标题、登录账号、API Key\s+或更新时间/
+  )
+  expect(guide).toContain('不会随每次一键接入自动执行')
+  expect(guide).toContain('不要开启 watch')
+  expect(guide).toContain('Node.js 22.5+')
+  expect(guide).toContain('backups_state/provider-sync')
+  expect(guide).toContain('encrypted_content')
+  expect(guide).toContain('invalid_encrypted_content')
+  expect(guide).toContain('正在重新连接 1/5…5/5')
+  expect(guide).toContain('不会造成该重连')
+
+  expect(historyScript).toContain(
+    '$AllowedProviders = @("anyrouters", "openai", "openai_http")'
+  )
+  expect(historyScript).toContain(
+    '$SessionProvider = if ($Provider -eq "openai_http") { "openai" }'
+  )
+  expect(historyScript).toContain('codex-provider-sync-lite-v0.3.1.zip')
+  expect(historyScript).toContain('6b6682b93772f81bf7e308a8a486a3748530fca62be6dca1ec38d65ac51dc36e')
+  expect(historyScript).toContain("import('node:sqlite')")
+  expect(historyScript).toContain('sync --provider $SessionProvider --keep 5')
+  expect(historyScript).toContain('Read-Host')
+  expect(historyScript).not.toContain('Stop-Process')
+  expect(historyScript).not.toContain('npm install')
 })
 
 test('every secondary guide states the UI location, final action, and success check', () => {

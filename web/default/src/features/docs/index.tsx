@@ -23,6 +23,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  History,
   MessageSquareCode,
   MonitorSmartphone,
   SquareTerminal,
@@ -49,6 +50,8 @@ const CC_SWITCH_OFFICIAL_URL =
   'https://github.com/farion1231/cc-switch/releases/latest'
 const CHERRY_STUDIO_OFFICIAL_URL =
   'https://github.com/CherryHQ/cherry-studio/releases/latest'
+const CODEX_PROVIDER_SYNC_URL =
+  'https://github.com/Dailin521/codex-provider-sync/tree/v0.3.1'
 const KEY = 'YOUR_ANYROUTERS_API_KEY'
 const CODEX_DEFAULT_MODEL = 'gpt-5.6-sol'
 const CLAUDE_DEFAULT_MODEL = 'claude-sonnet-4-6'
@@ -541,6 +544,10 @@ function codexOfficialRestoreCommand(os: OS) {
   return `curl -fsSL ${endpoint}.sh | bash`
 }
 
+function codexHistoryCommand() {
+  return '[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; irm https://anyrouters.com/install/codex-history.ps1 | iex'
+}
+
 function successOutput({
   os,
   tool,
@@ -682,12 +689,129 @@ function CodexOfficialRestoreGuide() {
           <code className='text-foreground'>codex login</code>
           ；脚本不会主动退出你原来的官方账号。
         </p>
+        <p className='text-muted-foreground'>
+          如果你曾使用「Codex-聊天迁移」同步过会话，切回官方配置后还要到该独立教程
+          再运行一次迁移命令。它会根据当前官方配置把本地会话索引同步回{' '}
+          <code className='text-foreground'>openai</code>
+          ；聊天正文不会因此删除。
+        </p>
         <p className='text-amber-700 dark:text-amber-300'>
           此操作会清理用户环境中的常见 OPENAI/Codex API
           覆盖；如果其他工具也依赖这些变量，请为其他工具使用独立配置。
         </p>
       </div>
     </section>
+  )
+}
+
+function CodexHistoryGuide() {
+  return (
+    <div>
+      <h1 className='text-2xl font-semibold tracking-tight'>Codex-聊天迁移</h1>
+      <p className='text-muted-foreground mt-2 text-sm'>
+        Windows 本地一次性迁移：让切换服务商后暂时不显示的旧任务重新出现在 Codex
+        列表中。
+      </p>
+
+      <div className='mt-8 space-y-10'>
+        <section>
+          <SectionTitle>先了解它会做什么</SectionTitle>
+          <div className='mt-6 space-y-4 rounded-lg border px-4 py-4 text-sm leading-6'>
+            <p>
+              这不是把 OpenAI 云端聊天上传到 AnyRouters，也不是从网站下载聊天。
+              工具只在你的电脑上同步 Codex rollout、SQLite 和项目可见性中的
+              Provider 元数据，不修改消息正文、标题、登录账号、API Key
+              或更新时间。
+            </p>
+            <p className='text-muted-foreground'>
+              当前教程使用开源{' '}
+              <a
+                href={CODEX_PROVIDER_SYNC_URL}
+                target='_blank'
+                rel='noreferrer'
+                className='inline-flex items-center gap-1 font-medium underline underline-offset-4'
+              >
+                codex-provider-sync v0.3.1
+                <ExternalLink className='size-3.5' />
+              </a>
+              。本站托管经 SHA-256 固定校验的约 48 KB 原始源码包，运行时不访问
+              GitHub、npm、Git 或 SSH，也不会全局安装启动器。
+            </p>
+            <p className='font-medium'>
+              这是可选的一次性操作，不会随每次一键接入自动执行，也不要开启 watch
+              或持续同步。
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <SectionTitle>迁移到当前配置</SectionTitle>
+          <div className='mt-6 space-y-8'>
+            <ManualStep index={1} title='先切换到目标配置'>
+              <p className='text-muted-foreground text-sm'>
+                要在 AnyRouters 中显示旧任务，先完成本站 Codex
+                一键接入；要恢复官方列表，先在 Codex 教程中运行「切回 OpenAI
+                官方订阅」。迁移脚本只接受{' '}
+                <code className='text-foreground'>anyrouters</code>、{' '}
+                <code className='text-foreground'>openai</code>，以及已经存在的
+                官方登录 HTTPS 兼容配置{' '}
+                <code className='text-foreground'>openai_http</code>
+                （会话仍标记为 openai），不会误改其他第三方服务商。
+              </p>
+            </ManualStep>
+
+            <ManualStep index={2} title='完全退出 Codex'>
+              <p className='text-muted-foreground text-sm'>
+                关闭 Codex 桌面版、Codex CLI 和 app-server 相关终端。脚本发现
+                Codex 仍在运行会直接停止，不会强制结束进程。
+              </p>
+            </ManualStep>
+
+            <ManualStep index={3} title='在 PowerShell 运行'>
+              <p className='text-muted-foreground text-sm'>
+                Windows 需要 Node.js 22.5+ 自带的 node:sqlite；无需安装 npm
+                包。复制整行命令到 PowerShell 运行，查看检测结果后输入大写{' '}
+                <code className='text-foreground'>YES</code> 确认。
+              </p>
+              <CodeBlock code={codexHistoryCommand()} />
+            </ManualStep>
+
+            <ManualStep index={4} title='重新打开并检查'>
+              <p className='text-muted-foreground text-sm'>
+                同步成功后重新打开 Codex。工具会先把备份保存到{' '}
+                <code className='text-foreground'>
+                  ~/.codex/backups_state/provider-sync
+                </code>
+                ，不要手动删除最近备份。官方与 AnyRouters
+                之间再次切换时，先切配置，再按本页重新同步到当前 Provider。
+              </p>
+            </ManualStep>
+          </div>
+        </section>
+
+        <section className='border-t pt-10'>
+          <SectionTitle>加密会话与重连说明</SectionTitle>
+          <div className='mt-6 space-y-4 rounded-lg border px-4 py-4 text-sm leading-6'>
+            <p>
+              原聊天文件不会被删除，但包含{' '}
+              <code className='text-foreground'>encrypted_content</code>{' '}
+              的会话与原账号/Provider
+              绑定。跨账号或服务商后可能能看到，却无法继续或压缩，并提示{' '}
+              <code className='text-foreground'>invalid_encrypted_content</code>
+              。遇到这种情况请回原账号继续，或先在原会话生成交接文档，再新建任务导入。
+            </p>
+            <p className='text-muted-foreground'>
+              Windows 中「正在重新连接 1/5…5/5」是 Codex 官方 WebSocket
+              连接超时后回退 HTTPS
+              的客户端/网络现象。本工具不改系统代理、WebSocket、认证、API
+              地址或传输设置；即使已经使用官方登录的 HTTPS
+              兼容配置，也只同步会话 Provider
+              元数据。因此聊天迁移和本教程更新不会造成该重连。
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
   )
 }
 
@@ -1729,6 +1853,12 @@ const GUIDES: GuideEntry[] = [
         withLinux
       />
     ),
+  },
+  {
+    id: 'codex-history',
+    label: 'Codex-聊天迁移',
+    icon: History,
+    render: () => <CodexHistoryGuide />,
   },
   {
     id: 'codex-image',
