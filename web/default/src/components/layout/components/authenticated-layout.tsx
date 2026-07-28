@@ -23,6 +23,7 @@ import { SearchProvider } from '@/context/search-provider'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AnimatedOutlet } from '@/components/page-transition'
 import { SkipToMain } from '@/components/skip-to-main'
+import { TicketUnreadProvider } from '@/features/tickets/ticket-unread-provider'
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
 
@@ -36,31 +37,33 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
   return (
     <LayoutProvider>
       <SearchProvider>
-        <SidebarProvider defaultOpen={defaultOpen} className='flex-col'>
-          <SkipToMain />
-          {/* Console chrome kept consistent with the marketing site: the sidebar
+        <TicketUnreadProvider>
+          <SidebarProvider defaultOpen={defaultOpen} className='flex-col'>
+            <SkipToMain />
+            {/* Console chrome kept consistent with the marketing site: the sidebar
               owns navigation, so the top bar drops the link row, command search
               and theme switcher — leaving brand · notifications · language · profile. */}
-          <AppHeader
-            showTopNav={false}
-            showSearch={false}
-            showNotifications={false}
-            showConfigDrawer={false}
-          />
-          <div className='flex min-h-0 w-full flex-1'>
-            <AppSidebar />
-            <SidebarInset
-              className={cn(
-                '@container/content',
-                'h-[calc(100svh-var(--app-header-height,0px))]',
-                'min-h-0 overflow-hidden',
-                'peer-data-[variant=inset]:h-[calc(100svh-var(--app-header-height,0px)-(var(--spacing)*4))]'
-              )}
-            >
-              {props.children ?? <AnimatedOutlet />}
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
+            <AppHeader
+              showTopNav={false}
+              showSearch={false}
+              showNotifications={false}
+              showConfigDrawer={false}
+            />
+            <div className='flex min-h-0 w-full flex-1'>
+              <AppSidebar />
+              <SidebarInset
+                className={cn(
+                  '@container/content',
+                  'h-[calc(100svh-var(--app-header-height,0px))]',
+                  'min-h-0 overflow-hidden',
+                  'peer-data-[variant=inset]:h-[calc(100svh-var(--app-header-height,0px)-(var(--spacing)*4))]'
+                )}
+              >
+                {props.children ?? <AnimatedOutlet />}
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
+        </TicketUnreadProvider>
       </SearchProvider>
     </LayoutProvider>
   )

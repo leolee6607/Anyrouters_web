@@ -5010,6 +5010,8 @@
     "Quota clamped": "额度已钳制",
     "Quota saturation protection triggered": "额度饱和保护已触发",
     "Underflow": "下溢",
-    "The reference image is too large to process. Please upload it again and retry.": "参考图片过大且自动压缩失败，请重新上传图片后再试。"
+    "The reference image is too large to process. Please upload it again and retry.": "参考图片过大且自动压缩失败，请重新上传图片后再试。",
+    "You have {{count}} unread support ticket replies.": "您有 {{count}} 条未读工单回复。",
+    "There are {{count}} unread support tickets waiting for staff.": "有 {{count}} 个未读工单等待客服处理。"
   }
 }

@@ -68,7 +68,9 @@ export async function closeSelfTicket(id: number): Promise<void> {
 }
 
 export async function getSelfUnreadCount(): Promise<number> {
-  const res = await api.get('/api/ticket/self/unread')
+  const res = await api.get('/api/ticket/self/unread', {
+    skipErrorHandler: true,
+  })
   return res.data?.data ?? 0
 }
 
@@ -78,6 +80,13 @@ export interface AdminTicketList {
   items: Ticket[]
   total: number
   admin_unread: number
+}
+
+export async function getAdminUnreadCount(): Promise<number> {
+  const res = await api.get('/api/ticket/admin/unread', {
+    skipErrorHandler: true,
+  })
+  return res.data?.data ?? 0
 }
 
 export async function listAdminTickets(

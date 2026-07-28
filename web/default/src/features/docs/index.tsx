@@ -20,6 +20,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   AppWindow,
+  Braces,
   Check,
   Copy,
   ExternalLink,
@@ -50,11 +51,14 @@ const CC_SWITCH_OFFICIAL_URL =
   'https://github.com/farion1231/cc-switch/releases/latest'
 const CHERRY_STUDIO_OFFICIAL_URL =
   'https://github.com/CherryHQ/cherry-studio/releases/latest'
+const CLINE_OFFICIAL_URL =
+  'https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev'
 const CODEX_PROVIDER_SYNC_URL =
   'https://github.com/Dailin521/codex-provider-sync/tree/v0.3.1'
 const KEY = 'YOUR_ANYROUTERS_API_KEY'
 const CODEX_DEFAULT_MODEL = 'gpt-5.6-sol'
 const CLAUDE_DEFAULT_MODEL = 'claude-sonnet-4-6'
+const OPENAI_COMPATIBLE_BASE = `${ANTHROPIC_BASE}/v1`
 const ANYROUTERS_IMAGE_SKILL_URL = '/install/anyrouters-image.zip'
 
 type GuideProps = {
@@ -1762,6 +1766,109 @@ function CherryStudioGuide({ apiKey, onApiKeyChange }: GuideProps) {
   )
 }
 
+function ClineGuide({ apiKey, onApiKeyChange }: GuideProps) {
+  return (
+    <div>
+      <h1 className='text-2xl font-semibold tracking-tight'>Cline</h1>
+      <p className='text-muted-foreground mt-2 text-sm'>
+        在 VS Code 的 Cline 扩展中使用 OpenAI Compatible 接入
+        AnyRouters。以下三项必须来自同一站点，不能混用其他同名服务商的地址或
+        Key。
+      </p>
+      <div className='mt-8'>
+        <section>
+          <SectionTitle>配置步骤</SectionTitle>
+          <div className='mt-6 space-y-8'>
+            <ApiKeyStep
+              apiKey={apiKey}
+              onApiKeyChange={onApiKeyChange}
+              toolName='Cline'
+            />
+
+            <ManualStep index={2} title='安装并打开 Cline'>
+              <OfficialInstallLink href={CLINE_OFFICIAL_URL}>
+                打开 VS Code Marketplace 的 Cline 官方页面
+              </OfficialInstallLink>
+              <p className='text-muted-foreground mt-3 text-sm'>
+                安装后打开 VS Code 左侧的 Cline 面板，点击右上角齿轮进入设置。
+              </p>
+            </ManualStep>
+
+            <ManualStep index={3} title='选择 OpenAI Compatible'>
+              <p className='text-muted-foreground text-sm'>
+                在 API Provider 中选择 <strong>OpenAI Compatible</strong>
+                。不要选择内置的 OpenAI， 也不要使用搜索结果中的{' '}
+                <code>anyrouter.dev</code>；那是另一家 服务，与本站账号和 API
+                Key 不互通。
+              </p>
+            </ManualStep>
+
+            <ManualStep index={4} title='填写地址、API Key 和模型 ID'>
+              <p className='text-muted-foreground text-sm'>
+                在对应输入框中逐项填写。模型 ID 必须使用「模型广场」显示的精确
+                ID，不要添加 <code>openai/</code> 等服务商前缀。
+              </p>
+              <ConfigValues
+                fields={[
+                  {
+                    label: 'Base URL',
+                    value: OPENAI_COMPATIBLE_BASE,
+                  },
+                  { label: 'API Key', value: KEY },
+                  { label: 'Model ID', value: CLAUDE_DEFAULT_MODEL },
+                ]}
+              />
+              <Button
+                variant='link'
+                className='mt-2 h-auto px-0'
+                render={<Link to='/marketplace' />}
+              >
+                打开模型广场复制其他可用模型 ID
+                <ExternalLink className='size-3.5' />
+              </Button>
+            </ManualStep>
+
+            <ManualStep index={5} title='保存并验证'>
+              <p className='text-muted-foreground text-sm'>
+                保存设置，回到 Cline 新建任务，输入{' '}
+                <code className='text-foreground'>hello</code>{' '}
+                并发送；收到回复就表示配置完成。若提示{' '}
+                <code className='text-foreground'>
+                  Missing Authorization header
+                </code>
+                ，说明 Cline 没有带上 API Key，请回到第 4 步重新粘贴完整 Key。
+              </p>
+            </ManualStep>
+          </div>
+        </section>
+
+        <section className='mt-10'>
+          <SectionTitle>常见错误</SectionTitle>
+          <div className='text-muted-foreground mt-4 space-y-2 text-sm leading-6'>
+            <p>
+              <strong className='text-foreground'>401 missing_api_key：</strong>
+              API Key 未保存，或当前 Provider 不是刚配置的 OpenAI Compatible。
+            </p>
+            <p>
+              <strong className='text-foreground'>
+                错误信息出现 anyrouter.dev：
+              </strong>
+              请求走到了另一家服务商。请把 Base URL 改回上方地址，并确认使用的是
+              AnyRouters Key。
+            </p>
+            <p>
+              <strong className='text-foreground'>
+                模型不存在或接口不兼容：
+              </strong>
+              不要照抄第三方教程中的模型名；从本站模型广场复制精确 ID 后重试。
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 function codexImageInstallCommand(os: OS) {
   if (os === 'windows') {
     return `$SkillRoot = Join-Path $HOME ".codex\\skills"
@@ -1986,6 +2093,12 @@ const GUIDES: GuideEntry[] = [
     label: 'Cherry Studio聊天',
     icon: MonitorSmartphone,
     render: (props) => <CherryStudioGuide {...props} />,
+  },
+  {
+    id: 'cline',
+    label: 'Cline-VS Code',
+    icon: Braces,
+    render: (props) => <ClineGuide {...props} />,
   },
 ]
 

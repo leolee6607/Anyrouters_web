@@ -121,6 +121,13 @@ func GetSelfTicketUnread(c *gin.Context) {
 
 // ---- Admin (staff) ----
 
+// GetAdminTicketUnread is a lightweight endpoint used by the global admin
+// navigation badge. Admins should not have to open the full ticket list just
+// to discover that a user is waiting for a reply.
+func GetAdminTicketUnread(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": model.CountAdminUnreadTickets()})
+}
+
 // GetAllTickets — admin list. status filters open/replied/closed; the special
 // value "archived" shows the archived bin instead.
 func GetAllTickets(c *gin.Context) {
