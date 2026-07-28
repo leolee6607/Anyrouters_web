@@ -5035,6 +5035,8 @@
     "Quota clamped": "Quota clamped",
     "Quota saturation protection triggered": "Quota saturation protection triggered",
     "Underflow": "Underflow",
-    "The reference image is too large to process. Please upload it again and retry.": "The reference image is too large to process. Please upload it again and retry."
+    "The reference image is too large to process. Please upload it again and retry.": "The reference image is too large to process. Please upload it again and retry.",
+    "You have {{count}} unread support ticket replies.": "You have {{count}} unread support ticket replies.",
+    "There are {{count}} unread support tickets waiting for staff.": "There are {{count}} unread support tickets waiting for staff."
   }
 }

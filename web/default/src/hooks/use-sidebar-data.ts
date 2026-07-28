@@ -36,6 +36,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { ROLE } from '@/lib/roles'
 import { type SidebarData } from '@/components/layout/types'
+import { useTicketUnread } from '@/features/tickets/ticket-unread-provider'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -45,6 +46,9 @@ import { type SidebarData } from '@/components/layout/types'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const { userUnread, adminUnread } = useTicketUnread()
+  const badge = (count: number) =>
+    count > 99 ? '99+' : count > 0 ? String(count) : undefined
 
   return {
     navGroups: [
@@ -74,6 +78,7 @@ export function useSidebarData(): SidebarData {
             title: t('Support Tickets'),
             url: '/tickets',
             icon: LifeBuoy,
+            badge: badge(userUnread),
           },
         ],
       },
@@ -148,6 +153,7 @@ export function useSidebarData(): SidebarData {
             title: t('Ticket Management'),
             url: '/admin-tickets',
             icon: LifeBuoy,
+            badge: badge(adminUnread),
           },
           {
             title: t('Subscription Management'),

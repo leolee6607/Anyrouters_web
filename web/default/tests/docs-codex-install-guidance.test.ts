@@ -36,7 +36,9 @@ test('one-line setup explains its scope below the command', () => {
   expect(source).toContain('这条命令会先检测现有 Codex')
   expect(source).toContain('未安装或能力不足时才安装或升级')
   expect(source).toContain('这条命令只更新')
-  expect(source).toMatch(/不会删除聊天记录，也不会修改系统代理、AWS\s+凭据或其他工具配置/)
+  expect(source).toMatch(
+    /不会删除聊天记录，也不会修改(?: Windows 全局|系统)代理、AWS\s+凭据或其他工具配置/
+  )
   expect(source).toMatch(/不会写入自定义模型目录，也不会关闭\s+Codex 原生子代理/)
   expect(source).toContain('检测只看 Codex 原生能力，不依赖当前版本号或服务商名称')
   expect(source).toContain('会影响 Codex 的通用 OpenAI API 路由覆盖')
@@ -77,7 +79,9 @@ test('Claude Code guide explains how to recover from a local context limit', () 
   expect(faq).toContain('第三方 skill')
   expect(faq).toContain('通常不是 AnyRouters Key、余额或模型故障')
   expect(faq).toContain('不会自动删除 ~/.claude、skills 或聊天记录')
-  expect(source).toContain('{tool === \'claude\' && <ClaudeContextLimitFaq />}')
+  expect(source).toMatch(
+    /\{tool === 'claude' && \(\s*<>\s*<ClaudeWindowsProxyFaq \/>\s*<ClaudeContextLimitFaq \/>/
+  )
 })
 
 test('developer guides explain where commands run and where configuration is written', () => {
@@ -208,4 +212,24 @@ test('every secondary guide states the UI location, final action, and success ch
   expect(image).toContain('等 Codex 明确回复“安装完成”')
   expect(image).toContain('Command-Q 完全退出 Codex')
   expect(image).toContain('桌面「AnyRouters图片」文件夹并自动打开')
+})
+
+test('Cline guide keeps the provider, endpoint, key, and model on AnyRouters', () => {
+  const cline = source.slice(
+    source.indexOf('function ClineGuide'),
+    source.indexOf('function codexImageInstallCommand')
+  )
+
+  expect(source).toContain("id: 'cline'")
+  expect(source).toContain("label: 'Cline-VS Code'")
+  expect(cline).toContain('OpenAI Compatible')
+  expect(cline).toContain('OPENAI_COMPATIBLE_BASE')
+  expect(cline).toContain("toolName='Cline'")
+  expect(cline).toContain('CLAUDE_DEFAULT_MODEL')
+  expect(cline).toContain('不要添加')
+  expect(cline).toContain('openai/')
+  expect(cline).toContain('anyrouter.dev')
+  expect(cline).toContain('Missing Authorization header')
+  expect(cline).toContain("to='/marketplace'")
+  expect(cline).toContain('收到回复就表示配置完成')
 })

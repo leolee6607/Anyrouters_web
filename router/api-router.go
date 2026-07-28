@@ -359,6 +359,7 @@ func SetApiRouter(router *gin.Engine) {
 			ticketAdminRoute.Use(middleware.AdminAuth())
 			{
 				ticketAdminRoute.GET("", controller.GetAllTickets)
+				ticketAdminRoute.GET("/unread", controller.GetAdminTicketUnread)
 				ticketAdminRoute.GET("/:id", controller.GetTicketByAdmin)
 				ticketAdminRoute.POST("/:id/reply", controller.ReplyTicketByAdmin)
 				ticketAdminRoute.POST("/:id/status", controller.SetTicketStatusByAdmin)
