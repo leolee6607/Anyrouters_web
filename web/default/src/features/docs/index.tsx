@@ -269,6 +269,32 @@ function CodexUpdateNotice() {
   )
 }
 
+function ClaudeWindowsProxyNotice() {
+  return (
+    <div className='rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100'>
+      <p className='font-semibold'>Windows 运行前：请先连接代理软件</p>
+      <ul className='mt-1 list-disc space-y-1 pl-5'>
+        <li>
+          脚本会分别验证直连和 Windows 已配置的 HTTP/Mixed
+          代理；仅在直连异常、代理链路正常时写入 Claude 专属代理配置。
+        </li>
+        <li>
+          不要求开启全局模式；使用规则模式时，请确保{' '}
+          <code>api.anyrouters.com</code> 经过代理。
+        </li>
+        <li>
+          安装及后续使用期间都要保持代理软件连接。脚本不会修改 Windows
+          全局代理，也不会扫描或猜测本地端口。
+        </li>
+        <li>
+          Claude Code 不支持 SOCKS-only 或 PAC 地址；代理软件需要提供 HTTP 或
+          Mixed 端口。
+        </li>
+      </ul>
+    </div>
+  )
+}
+
 function ApiTakeoverNotice({
   tool,
 }: {
@@ -284,7 +310,7 @@ function ApiTakeoverNotice({
   }
   const safety =
     tool === 'claude'
-      ? '修改前会自动备份；不会删除聊天记录，也不会修改系统代理、AWS 凭据或其他工具配置。'
+      ? '修改前会自动备份；不会删除聊天记录，也不会修改 Windows 全局代理、AWS 凭据或其他工具配置。Windows 直连受限时，只会把已验证可用的 HTTP/Mixed 代理写入 Claude 自己的 settings.json。'
       : '修改前会自动备份；不会写入自定义模型目录，也不会关闭 Codex 原生子代理、工具能力或修改已有推理强度。检测只看 Codex 原生能力，不依赖当前版本号或服务商名称；命令会清理会影响 Codex 的通用 OpenAI API 路由覆盖，但只使用你粘贴的现有 AnyRouters Key，不会创建、替换或停用网站 Key，也不会修改系统代理、AWS 凭据或 CODEX_HOME。'
 
   return (
@@ -612,6 +638,9 @@ function UserFlow({
           {(tool === 'codex' || tool === 'codex-config') && (
             <CodexUpdateNotice />
           )}
+          {tool === 'claude' && os === 'windows' && (
+            <ClaudeWindowsProxyNotice />
+          )}
           {tool === 'codex' && (
             <p className='text-sm font-medium'>
               已经安装 Codex 的用户无需卸载或重装；脚本会自动检测兼容性。
@@ -846,6 +875,61 @@ function ClaudeContextLimitFaq() {
         <p className='mt-3 font-medium'>
           AnyRouters 安装脚本不会自动删除 ~/.claude、skills 或聊天记录；
           这些内容可能包含用户自己的配置，不应为排障整目录清除。
+        </p>
+      </div>
+    </section>
+  )
+}
+
+function ClaudeWindowsProxyFaq() {
+  const { os } = useOsChoice()
+  if (os !== 'windows') return null
+
+  return (
+    <section className='border-b py-10'>
+      <SectionTitle>Windows 403 与代理排障</SectionTitle>
+      <div className='mt-6 rounded-lg border px-4 py-4 text-sm leading-6'>
+        <StepTitle>
+          提示 Please run /login，并返回 HTML 403，应该怎么办？
+        </StepTitle>
+        <p className='text-muted-foreground mt-2'>
+          如果错误内容带有{' '}
+          <code className='text-foreground'>&lt;!doctype html&gt;</code>、
+          <code className='text-foreground'>
+            &lt;title&gt;403&lt;/title&gt;
+          </code>{' '}
+          或 <code className='text-foreground'>403 Forbidden</code>
+          ，通常是 Windows 终端中的 Claude 没有走到代理，并不是 Key
+          失效，也不需要反复执行 <code className='text-foreground'>/login</code>
+          。浏览器能打开网站也不能证明 Claude
+          已经走代理，因为两者读取代理设置的方式不同。
+        </p>
+        <ol className='text-muted-foreground mt-3 list-decimal space-y-2 pl-5'>
+          <li>确认代理软件已连接，并提供 HTTP 或 Mixed 端口。</li>
+          <li>
+            规则模式下确认{' '}
+            <code className='text-foreground'>api.anyrouters.com</code>{' '}
+            经过代理；全局模式不是必需条件。
+          </li>
+          <li>
+            回到上方“快速接入”，重新复制并运行最新的一键命令。脚本会自动检测
+            Windows 代理、验证 API 链路，并仅更新{' '}
+            <code className='text-foreground'>~/.claude/settings.json</code>。
+          </li>
+          <li>
+            看到完成提示后，完全退出 Claude Code，关闭原终端，再打开新的
+            PowerShell 运行 <code className='text-foreground'>claude</code>。
+          </li>
+          <li>
+            使用期间不要断开代理。若自动检测不到 PAC
+            或自定义代理，可按脚本提示设置{' '}
+            <code className='text-foreground'>ANYROUTERS_PROXY</code>
+            后重跑；不要把 SOCKS 端口当作 HTTP 端口。
+          </li>
+        </ol>
+        <p className='mt-3 font-medium'>
+          正常判断标准：直连可能返回 HTML 403，但通过代理访问接口应返回 JSON；
+          未携带 Key 的检查返回 JSON 401 也表示网络链路已经正常。
         </p>
       </div>
     </section>
@@ -1388,7 +1472,19 @@ function DeveloperFlow({
                 </li>
               ))}
             </ul>
-            <ClaudeEnvCommands />
+            {os === 'windows' ? (
+              <>
+                <p className='text-muted-foreground text-sm'>
+                  Windows 复用与“快速接入”相同的正式脚本，以确保直连/代理检测、
+                  API 验证、配置备份和回滚逻辑保持一致；脚本可以安全重复运行。
+                </p>
+                <CodeBlock
+                  code={installCommand({ os, tool: 'claude', key: KEY })}
+                />
+              </>
+            ) : (
+              <ClaudeEnvCommands />
+            )}
           </ManualStep>
         )}
 
@@ -1467,7 +1563,12 @@ function ToolGuide({
             toolName={toolName}
             desktopDownload={desktopDownload}
           />
-          {tool === 'claude' && <ClaudeContextLimitFaq />}
+          {tool === 'claude' && (
+            <>
+              <ClaudeWindowsProxyFaq />
+              <ClaudeContextLimitFaq />
+            </>
+          )}
           <DeveloperFlow kind={developerKind} />
           {tool !== 'claude' && <CodexOfficialRestoreGuide />}
         </div>

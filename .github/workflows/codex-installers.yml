@@ -5,7 +5,9 @@ on:
     paths:
       - 'router/install_scripts/codex*.ps1'
       - 'router/install_scripts/codex*.sh'
+      - 'router/install_scripts/claude.ps1'
       - 'web/default/tests/codex-gpt56-catalog-compat.test.ts'
+      - 'web/default/tests/install-script-conflict-cleanup.test.ts'
       - '.github/workflows/codex-installers.yml'
 
 permissions:
@@ -31,3 +33,13 @@ jobs:
         run: >-
           bun test tests/codex-gpt56-catalog-compat.test.ts
           --test-name-pattern "^PowerShell"
+
+      - name: Parse Claude PowerShell installer and verify proxy safety checks
+        working-directory: web/default
+        shell: powershell
+        run: |
+          [ScriptBlock]::Create(
+            (Get-Content -Raw ../../router/install_scripts/claude.ps1)
+          ) | Out-Null
+          bun test tests/install-script-conflict-cleanup.test.ts `
+            --test-name-pattern "Windows Claude installer"

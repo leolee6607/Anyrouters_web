@@ -85,6 +85,24 @@ test('Claude installers clear stale provider selection without deleting AWS cred
   }
 })
 
+test('Windows Claude installer detects a working HTTP proxy without changing the system proxy', () => {
+  const source = installer('claude.ps1')
+
+  expect(source).toContain('Get-WindowsProxyCandidates')
+  expect(source).toContain('Test-AnyRoutersApiRoute')
+  expect(source).toContain('--noproxy')
+  expect(source).toContain('--proxy')
+  expect(source).toContain('ANYROUTERS_PROXY')
+  expect(source).toContain('api.anyrouters.com must go through the proxy')
+  expect(source).toContain('@("HTTP_PROXY", "HTTPS_PROXY")')
+  expect(source).toContain('$envBlock[$proxyName] = $ClaudeProxy')
+  expect(source).not.toMatch(
+    /SetEnvironmentVariable\("(HTTP_PROXY|HTTPS_PROXY)",\s*\$ClaudeProxy,\s*"(User|Machine)"\)/
+  )
+  expect(source).not.toMatch(/127\.0\.0\.1:\d{2,5}/)
+  expect(source).not.toMatch(/789[0-9]/)
+})
+
 test('one-line installers keep their official install and fallback paths', () => {
   expect(installer('codex.sh')).toContain(
     'https://chatgpt.com/codex/install.sh'

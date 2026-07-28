@@ -28,6 +28,150 @@ function Normalize-AnyRoutersKey([string]$Value) {
   return $k
 }
 
+function Normalize-HttpProxy([string]$Value) {
+  if (-not $Value) {
+    return $null
+  }
+  $proxy = $Value.Trim().Trim('"').Trim("'")
+  if (-not $proxy -or $proxy -match "(?i)^socks") {
+    return $null
+  }
+  if ($proxy -notmatch "^[a-zA-Z][a-zA-Z0-9+.-]*://") {
+    $proxy = "http://$proxy"
+  }
+  try {
+    $uri = [Uri]$proxy
+    if ($uri.Scheme -notin @("http", "https") -or -not $uri.Host -or $uri.Port -le 0) {
+      return $null
+    }
+    return $uri.AbsoluteUri.TrimEnd("/")
+  } catch {
+    return $null
+  }
+}
+
+function Get-ClaudeSettingsProxyCandidates {
+  if (-not $env:USERPROFILE) {
+    return @()
+  }
+  $settingsPath = Join-Path $env:USERPROFILE ".claude\settings.json"
+  if (-not (Test-Path $settingsPath)) {
+    return @()
+  }
+  try {
+    $settings = Get-Content -Raw -Path $settingsPath | ConvertFrom-Json
+    if (-not $settings.env) {
+      return @()
+    }
+    return @($settings.env.HTTPS_PROXY, $settings.env.HTTP_PROXY)
+  } catch {
+    return @()
+  }
+}
+
+function Get-WindowsProxyCandidates {
+  $values = @()
+  try {
+    $internetSettings = Get-ItemProperty `
+      -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" `
+      -ErrorAction Stop
+    if ([int]$internetSettings.ProxyEnable -eq 1 -and $internetSettings.ProxyServer) {
+      $proxyServer = [string]$internetSettings.ProxyServer
+      if ($proxyServer -match ";|=") {
+        foreach ($part in ($proxyServer -split ";")) {
+          if ($part -match "^\s*(?:https?|proxy)\s*=\s*(.+?)\s*$") {
+            $values += $Matches[1]
+          }
+        }
+      } else {
+        $values += $proxyServer
+      }
+    }
+  } catch {}
+  return $values
+}
+
+function Get-ProxyCandidates {
+  $values = @(
+    $env:ANYROUTERS_PROXY,
+    $env:HTTPS_PROXY,
+    $env:HTTP_PROXY,
+    [Environment]::GetEnvironmentVariable("HTTPS_PROXY", "User"),
+    [Environment]::GetEnvironmentVariable("HTTP_PROXY", "User")
+  )
+  $values += @(Get-ClaudeSettingsProxyCandidates)
+  $values += @(Get-WindowsProxyCandidates)
+
+  $normalized = @()
+  foreach ($value in $values) {
+    $proxy = Normalize-HttpProxy ([string]$value)
+    if ($proxy -and $normalized -notcontains $proxy) {
+      $normalized += $proxy
+    }
+  }
+  return $normalized
+}
+
+function Test-AnyRoutersApiRoute([string]$Proxy, [bool]$Direct = $false) {
+  $result = [ordered]@{
+    Supported = $false
+    Available = $false
+    IsApiJson = $false
+    StatusCode = ""
+    ContentType = ""
+    IsHtml = $false
+  }
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if (-not $curl) {
+    return [pscustomobject]$result
+  }
+  $result.Supported = $true
+
+  $bodyPath = [IO.Path]::GetTempFileName()
+  try {
+    $arguments = @(
+      "-sS",
+      "--max-time", "15",
+      "-o", $bodyPath,
+      "-w", "%{http_code}|%{content_type}"
+    )
+    if ($Direct) {
+      $arguments += @("--noproxy", "*")
+    } elseif ($Proxy) {
+      $arguments += @("--proxy", $Proxy)
+    }
+    $arguments += "https://api.anyrouters.com/v1/models"
+
+    $meta = (@(& $curl.Source @arguments 2>$null) -join "").Trim()
+    $exitCode = $LASTEXITCODE
+    $body = if (Test-Path $bodyPath) {
+      [string](Get-Content -Raw -Path $bodyPath -ErrorAction SilentlyContinue)
+    } else {
+      ""
+    }
+    if ($meta -match "^(\d{3})\|(.*)$") {
+      $result.StatusCode = $Matches[1]
+      $result.ContentType = $Matches[2]
+    }
+    $trimmedBody = $body.TrimStart()
+    $result.Available = $exitCode -eq 0
+    $result.IsHtml = $trimmedBody -match "(?is)^(?:<!doctype html|<html|<meta)"
+    $result.IsApiJson =
+      $result.Available -and
+      $result.StatusCode -in @("200", "401") -and
+      (
+        $result.ContentType -match "(?i)application/json" -or
+        $trimmedBody.StartsWith("{") -or
+        $trimmedBody.StartsWith("[")
+      )
+  } catch {
+    $result.Available = $false
+  } finally {
+    Remove-Item $bodyPath -Force -ErrorAction SilentlyContinue
+  }
+  return [pscustomobject]$result
+}
+
 $OriginalKey = $Key
 $Key = Normalize-AnyRoutersKey $Key
 if ($OriginalKey -ne $Key) {
@@ -38,8 +182,49 @@ if (-not $Key -or $Key -match "YOUR_KEY|YOUR_ANYROUTERS_API_KEY|本页顶部|API
   return
 }
 
+$ClaudeProxy = $null
+$directProbe = Test-AnyRoutersApiRoute $null $true
+if (-not $directProbe.IsApiJson) {
+  foreach ($candidate in @(Get-ProxyCandidates)) {
+    $proxyProbe = Test-AnyRoutersApiRoute $candidate $false
+    if ($proxyProbe.IsApiJson) {
+      $ClaudeProxy = $candidate
+      break
+    }
+  }
+}
+
+if ($directProbe.Supported -and -not $directProbe.IsApiJson -and -not $ClaudeProxy) {
+  Write-Host "X AnyRouters API is not reachable through the current Windows terminal route."
+  if ($directProbe.StatusCode -eq "403" -or $directProbe.IsHtml) {
+    Write-Host "  Direct access returned an HTML 403 page. This is a proxy-routing issue, not an API login error."
+  }
+  Write-Host "  Keep your proxy app connected, enable an HTTP or Mixed proxy, then re-run this command."
+  Write-Host "  Rule mode is supported, but api.anyrouters.com must go through the proxy."
+  Write-Host "  SOCKS-only and PAC-only settings cannot be written directly to Claude Code."
+  Write-Host "  If automatic detection is unavailable, set ANYROUTERS_PROXY first, for example:"
+  Write-Host '  $env:ANYROUTERS_PROXY="http://127.0.0.1:YOUR_HTTP_PORT"'
+  return
+}
+
+if ($ClaudeProxy) {
+  Write-Host "Detected a working HTTP proxy for Claude Code: $ClaudeProxy"
+  Write-Host "The proxy will be saved only in Claude settings; Windows global proxy settings will not be changed."
+  $env:HTTP_PROXY = $ClaudeProxy
+  $env:HTTPS_PROXY = $ClaudeProxy
+}
+
 try {
-  Invoke-RestMethod -Method Get -Uri "https://api.anyrouters.com/v1/models" -Headers @{ Authorization = "Bearer $Key" } -TimeoutSec 20 | Out-Null
+  $validationArguments = @{
+    Method = "Get"
+    Uri = "https://api.anyrouters.com/v1/models"
+    Headers = @{ Authorization = "Bearer $Key" }
+    TimeoutSec = 20
+  }
+  if ($ClaudeProxy) {
+    $validationArguments["Proxy"] = $ClaudeProxy
+  }
+  Invoke-RestMethod @validationArguments | Out-Null
 } catch {
   $status = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { "network error" }
   Write-Host "X API key validation failed ($status)."
@@ -165,6 +350,14 @@ function Update-ClaudeUserSettings {
   if (-not $envBlock.Contains("ANTHROPIC_MODEL") -or $envBlock["ANTHROPIC_MODEL"] -ne $Model) {
     $envBlock["ANTHROPIC_MODEL"] = $Model
     $changed = $true
+  }
+  if ($ClaudeProxy) {
+    foreach ($proxyName in @("HTTP_PROXY", "HTTPS_PROXY")) {
+      if (-not $envBlock.Contains($proxyName) -or $envBlock[$proxyName] -ne $ClaudeProxy) {
+        $envBlock[$proxyName] = $ClaudeProxy
+        $changed = $true
+      }
+    }
   }
 
   if ($changed) {
@@ -408,7 +601,14 @@ function Install-ClaudeWithUserNpm {
 Write-Host "Installing Claude Code ..."
 $installed = $false
 try {
-  $installer = Invoke-RestMethod -Uri "https://claude.ai/install.ps1" -ErrorAction Stop
+  $installerArguments = @{
+    Uri = "https://claude.ai/install.ps1"
+    ErrorAction = "Stop"
+  }
+  if ($ClaudeProxy) {
+    $installerArguments["Proxy"] = $ClaudeProxy
+  }
+  $installer = Invoke-RestMethod @installerArguments
   if (Test-InstallerHtml $installer) {
     Write-Host "Official installer returned an HTML page. Skipping it."
   } else {
@@ -450,6 +650,10 @@ if ($claudeCommand) {
 
 if (Repair-CmdClaudePath $NpmPrefix) {
   Write-Host "Done! Open a NEW PowerShell or cmd.exe window and run:  claude"
+  if ($ClaudeProxy) {
+    Write-Host "Keep the proxy app connected. In rule mode, api.anyrouters.com must use the proxy."
+    Write-Host "Claude-specific HTTP_PROXY and HTTPS_PROXY were saved in ~/.claude/settings.json."
+  }
 } else {
   Write-Host "Claude Code may be installed, but cmd.exe still cannot run the claude command yet."
   Write-Host "Close all terminal windows, open a NEW cmd.exe, then run:  where claude"
