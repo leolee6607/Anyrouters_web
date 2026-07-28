@@ -4,11 +4,208 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 )
+
+func writeExecutable(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClaudeShellInstallerDetectsMacSystemHTTPProxy(t *testing.T) {
+	script, err := installScriptsFS.ReadFile("install_scripts/claude.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempDir := t.TempDir()
+	fakeBin := filepath.Join(tempDir, "bin")
+	if err := os.MkdirAll(fakeBin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(tempDir, "claude.sh")
+	if err := os.WriteFile(scriptPath, script, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeExecutable(t, filepath.Join(fakeBin, "scutil"), `#!/bin/sh
+cat <<'EOF'
+<dictionary> {
+  HTTPEnable : 1
+  HTTPPort : 7897
+  HTTPProxy : 127.0.0.1
+  HTTPSEnable : 1
+  HTTPSPort : 7897
+  HTTPSProxy : 127.0.0.1
+}
+EOF
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "curl"), `#!/bin/sh
+proxy=
+body=/dev/null
+format=
+url=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --proxy) proxy="$2"; shift 2 ;;
+    --noproxy) shift 2 ;;
+    -o) body="$2"; shift 2 ;;
+    -w) format="$2"; shift 2 ;;
+    http://*|https://*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+case "$url" in
+  *api.anyrouters.com/v1/models)
+    if [ "$proxy" = "http://127.0.0.1:7897" ]; then
+      [ "$body" = /dev/null ] || printf '{"data":[]}\n' > "$body"
+      case "$format" in
+        *content_type*) printf '200|application/json' ;;
+        *) printf '200' ;;
+      esac
+      exit 0
+    fi
+    [ "$body" = /dev/null ] || printf '<!doctype html><title>403</title>403 Forbidden\n' > "$body"
+    case "$format" in
+      *content_type*) printf '403|text/html' ;;
+      *) printf '403' ;;
+    esac
+    exit 0
+    ;;
+  *claude.ai/install.sh)
+    printf '#!/bin/sh\nexit 0\n' > "$body"
+    exit 0
+    ;;
+esac
+exit 1
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "launchctl"), "#!/bin/sh\nexit 0\n")
+	writeExecutable(t, filepath.Join(fakeBin, "claude"), "#!/bin/sh\necho 'Claude Code test'\n")
+
+	command := exec.Command("bash", scriptPath, "sk-test")
+	command.Env = append(os.Environ(),
+		"HOME="+tempDir,
+		"SHELL=/bin/zsh",
+		"PATH="+fakeBin+":"+os.Getenv("PATH"),
+		"ANYROUTERS_PROXY=",
+		"HTTP_PROXY=",
+		"HTTPS_PROXY=",
+		"http_proxy=",
+		"https_proxy=",
+	)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("installer failed: %v\n%s", err, output)
+	}
+
+	settings, err := os.ReadFile(filepath.Join(tempDir, ".claude", "settings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{
+		`"HTTP_PROXY": "http://127.0.0.1:7897"`,
+		`"HTTPS_PROXY": "http://127.0.0.1:7897"`,
+	} {
+		if !bytes.Contains(settings, []byte(expected)) {
+			t.Fatalf("settings do not contain %q:\n%s", expected, settings)
+		}
+	}
+}
+
+func TestClaudeShellInstallerLeavesProxyUnsetWhenDirectApiWorks(t *testing.T) {
+	script, err := installScriptsFS.ReadFile("install_scripts/claude.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempDir := t.TempDir()
+	fakeBin := filepath.Join(tempDir, "bin")
+	if err := os.MkdirAll(fakeBin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(tempDir, "claude.sh")
+	if err := os.WriteFile(scriptPath, script, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeExecutable(t, filepath.Join(fakeBin, "scutil"), `#!/bin/sh
+cat <<'EOF'
+<dictionary> {
+  HTTPEnable : 1
+  HTTPPort : 8123
+  HTTPProxy : 127.0.0.1
+}
+EOF
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "curl"), `#!/bin/sh
+body=/dev/null
+format=
+url=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --proxy|--noproxy) shift 2 ;;
+    -o) body="$2"; shift 2 ;;
+    -w) format="$2"; shift 2 ;;
+    http://*|https://*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+case "$url" in
+  *api.anyrouters.com/v1/models)
+    [ "$body" = /dev/null ] || printf '{"data":[]}\n' > "$body"
+    case "$format" in
+      *content_type*) printf '200|application/json' ;;
+      *) printf '200' ;;
+    esac
+    exit 0
+    ;;
+  *claude.ai/install.sh)
+    printf '#!/bin/sh\nexit 0\n' > "$body"
+    exit 0
+    ;;
+esac
+exit 1
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "launchctl"), "#!/bin/sh\nexit 0\n")
+	writeExecutable(t, filepath.Join(fakeBin, "claude"), "#!/bin/sh\necho 'Claude Code test'\n")
+
+	command := exec.Command("bash", scriptPath, "sk-test")
+	command.Env = append(os.Environ(),
+		"HOME="+tempDir,
+		"SHELL=/bin/zsh",
+		"PATH="+fakeBin+":"+os.Getenv("PATH"),
+		"ANYROUTERS_PROXY=",
+		"HTTP_PROXY=",
+		"HTTPS_PROXY=",
+		"http_proxy=",
+		"https_proxy=",
+	)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("installer failed: %v\n%s", err, output)
+	}
+	if bytes.Contains(output, []byte("Detected a working HTTP proxy")) {
+		t.Fatalf("direct route unexpectedly selected a proxy:\n%s", output)
+	}
+
+	settings, err := os.ReadFile(filepath.Join(tempDir, ".claude", "settings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, unexpected := range []string{`"HTTP_PROXY"`, `"HTTPS_PROXY"`} {
+		if bytes.Contains(settings, []byte(unexpected)) {
+			t.Fatalf("direct route unexpectedly wrote %s:\n%s", unexpected, settings)
+		}
+	}
+}
 
 func TestCodexHistoryInstallerRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)

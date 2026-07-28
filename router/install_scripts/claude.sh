@@ -58,7 +58,197 @@ case "$KEY" in
     ;;
 esac
 
-status="$(curl -sS -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $KEY" https://api.anyrouters.com/v1/models || true)"
+normalize_http_proxy() {
+  proxy="$(printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  proxy="${proxy%\"}"
+  proxy="${proxy#\"}"
+  proxy="${proxy%\'}"
+  proxy="${proxy#\'}"
+  case "$proxy" in
+    ""|[Ss][Oo][Cc][Kk][Ss]*) return 1 ;;
+    *://*) ;;
+    *) proxy="http://$proxy" ;;
+  esac
+  case "$proxy" in
+    http://*|https://*) ;;
+    *) return 1 ;;
+  esac
+  authority="${proxy#*://}"
+  authority="${authority%%/*}"
+  [ -n "$authority" ] || return 1
+  printf '%s' "${proxy%/}"
+}
+
+claude_settings_proxy_candidates() {
+  settings_path="$HOME/.claude/settings.json"
+  [ -f "$settings_path" ] || return 0
+
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -extract env.HTTPS_PROXY raw -o - "$settings_path" 2>/dev/null || true
+    printf '\n'
+    plutil -extract env.HTTP_PROXY raw -o - "$settings_path" 2>/dev/null || true
+    printf '\n'
+    return 0
+  fi
+  if command -v node >/dev/null 2>&1; then
+    ANYROUTERS_SETTINGS_PATH="$settings_path" node <<'NODE'
+const fs = require('fs')
+try {
+  const value = JSON.parse(fs.readFileSync(process.env.ANYROUTERS_SETTINGS_PATH, 'utf8').replace(/^\uFEFF/, ''))
+  console.log(value?.env?.HTTPS_PROXY || '')
+  console.log(value?.env?.HTTP_PROXY || '')
+} catch {
+  // An unreadable settings file is backed up later by the normal settings update.
+}
+NODE
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    ANYROUTERS_SETTINGS_PATH="$settings_path" python3 <<'PY'
+import json
+import os
+
+try:
+    with open(os.environ["ANYROUTERS_SETTINGS_PATH"], "r", encoding="utf-8-sig") as handle:
+        value = json.load(handle)
+    env = value.get("env", {}) if isinstance(value, dict) else {}
+    print(env.get("HTTPS_PROXY", ""))
+    print(env.get("HTTP_PROXY", ""))
+except (OSError, ValueError):
+    pass
+PY
+  fi
+}
+
+macos_system_proxy_candidates() {
+  command -v scutil >/dev/null 2>&1 || return 0
+  proxy_state="$(scutil --proxy 2>/dev/null || true)"
+  [ -n "$proxy_state" ] || return 0
+
+  https_enabled="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPSEnable" && $2 == ":" { print $3; exit }')"
+  https_host="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPSProxy" && $2 == ":" { print $3; exit }')"
+  https_port="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPSPort" && $2 == ":" { print $3; exit }')"
+  if [ "$https_enabled" = "1" ] && [ -n "$https_host" ] && [ -n "$https_port" ]; then
+    printf 'http://%s:%s\n' "$https_host" "$https_port"
+  fi
+
+  http_enabled="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPEnable" && $2 == ":" { print $3; exit }')"
+  http_host="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPProxy" && $2 == ":" { print $3; exit }')"
+  http_port="$(printf '%s\n' "$proxy_state" | awk '$1 == "HTTPPort" && $2 == ":" { print $3; exit }')"
+  if [ "$http_enabled" = "1" ] && [ -n "$http_host" ] && [ -n "$http_port" ]; then
+    printf 'http://%s:%s\n' "$http_host" "$http_port"
+  fi
+}
+
+proxy_candidates() {
+  {
+    printf '%s\n' \
+      "${ANYROUTERS_PROXY:-}" \
+      "${HTTPS_PROXY:-}" \
+      "${https_proxy:-}" \
+      "${HTTP_PROXY:-}" \
+      "${http_proxy:-}"
+    claude_settings_proxy_candidates
+    macos_system_proxy_candidates
+  } | while IFS= read -r candidate; do
+    normalized="$(normalize_http_proxy "$candidate" 2>/dev/null || true)"
+    [ -n "$normalized" ] && printf '%s\n' "$normalized"
+  done | awk '!seen[$0]++'
+}
+
+probe_api_route() {
+  route_proxy="$1"
+  route_mode="$2"
+  probe_body="$(mktemp)"
+  probe_args=(-sS --max-time 15 -o "$probe_body" -w "%{http_code}|%{content_type}")
+  if [ "$route_mode" = "direct" ]; then
+    probe_args+=(--noproxy "*")
+  elif [ -n "$route_proxy" ]; then
+    probe_args+=(--noproxy "" --proxy "$route_proxy")
+  fi
+  probe_args+=(https://api.anyrouters.com/v1/models)
+
+  if probe_meta="$(curl "${probe_args[@]}" 2>/dev/null)"; then
+    PROBE_AVAILABLE=1
+  else
+    PROBE_AVAILABLE=0
+  fi
+  PROBE_STATUS="${probe_meta%%|*}"
+  PROBE_CONTENT_TYPE="${probe_meta#*|}"
+  probe_start="$(LC_ALL=C head -c 512 "$probe_body" 2>/dev/null || true)"
+  rm -f "$probe_body"
+  case "$probe_start" in
+    "<!doctype html"*|"<html"*|"<meta"*) PROBE_HTML=1 ;;
+    *) PROBE_HTML=0 ;;
+  esac
+  PROBE_API_JSON=0
+  if [ "$PROBE_AVAILABLE" = "1" ]; then
+    case "$PROBE_STATUS" in
+      200|401)
+        case "$PROBE_CONTENT_TYPE:$probe_start" in
+          *application/json*|*:\{*|*:\[*)
+            PROBE_API_JSON=1
+            ;;
+        esac
+        ;;
+    esac
+  fi
+}
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "X curl is required."
+  exit 1
+fi
+
+CLAUDE_PROXY=""
+probe_api_route "" direct
+DIRECT_API_JSON="$PROBE_API_JSON"
+DIRECT_STATUS="$PROBE_STATUS"
+DIRECT_HTML="$PROBE_HTML"
+if [ "$DIRECT_API_JSON" != "1" ]; then
+  while IFS= read -r candidate; do
+    [ -n "$candidate" ] || continue
+    probe_api_route "$candidate" proxy
+    if [ "$PROBE_API_JSON" = "1" ]; then
+      CLAUDE_PROXY="$candidate"
+      break
+    fi
+  done <<EOF
+$(proxy_candidates)
+EOF
+fi
+
+if [ "$DIRECT_API_JSON" != "1" ] && [ -z "$CLAUDE_PROXY" ]; then
+  echo "X AnyRouters API is not reachable through the current macOS terminal route."
+  if [ "$DIRECT_STATUS" = "403" ] || [ "$DIRECT_HTML" = "1" ]; then
+    echo "  Direct access returned an HTML 403 page. This is a proxy-routing issue, not an API key error."
+  fi
+  echo "  Keep your proxy app connected and enable an HTTP or Mixed proxy, then re-run this command."
+  echo "  TUN/Fake-IP mode is supported. SOCKS-only and PAC-only settings cannot be written to Claude Code."
+  echo "  If automatic detection is unavailable, set ANYROUTERS_PROXY first, for example:"
+  echo '  export ANYROUTERS_PROXY="http://127.0.0.1:YOUR_HTTP_PORT"'
+  exit 1
+fi
+
+if [ -n "$CLAUDE_PROXY" ]; then
+  echo "Detected a working HTTP proxy for Claude Code: $CLAUDE_PROXY"
+  echo "The proxy will be saved only in Claude settings; macOS system proxy settings will not be changed."
+  export HTTP_PROXY="$CLAUDE_PROXY"
+  export HTTPS_PROXY="$CLAUDE_PROXY"
+  export http_proxy="$CLAUDE_PROXY"
+  export https_proxy="$CLAUDE_PROXY"
+  export NO_PROXY=""
+  export no_proxy=""
+fi
+
+validation_args=(-sS --max-time 20 -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $KEY")
+if [ -n "$CLAUDE_PROXY" ]; then
+  validation_args+=(--noproxy "" --proxy "$CLAUDE_PROXY")
+else
+  validation_args+=(--noproxy "*")
+fi
+validation_args+=(https://api.anyrouters.com/v1/models)
+status="$(curl "${validation_args[@]}" 2>/dev/null || true)"
 if [ "$status" != "200" ]; then
   echo "X API key validation failed (HTTP $status)."
   echo "  Copy the complete key from AnyRouters API Keys. Do not add sk-anyrouters- before it."
@@ -101,11 +291,12 @@ update_claude_user_settings() {
   mkdir -p "$settings_dir"
 
   if command -v node >/dev/null 2>&1; then
-    ANYROUTERS_SETTINGS_PATH="$settings_path" ANYROUTERS_MODEL="$MODEL" node <<'NODE'
+    ANYROUTERS_SETTINGS_PATH="$settings_path" ANYROUTERS_MODEL="$MODEL" ANYROUTERS_CLAUDE_PROXY="$CLAUDE_PROXY" node <<'NODE'
 const fs = require('fs')
 
 const settingsPath = process.env.ANYROUTERS_SETTINGS_PATH
 const model = process.env.ANYROUTERS_MODEL
+const proxy = process.env.ANYROUTERS_CLAUDE_PROXY || ''
 const conflicting = [
   'ANTHROPIC_API_KEY',
   'CLAUDE_CODE_OAUTH_TOKEN',
@@ -154,6 +345,10 @@ for (const name of conflicting) {
 delete settings.apiKeyHelper
 settings.env.ANTHROPIC_BASE_URL = 'https://api.anyrouters.com'
 settings.env.ANTHROPIC_MODEL = model
+if (proxy) {
+  settings.env.HTTP_PROXY = proxy
+  settings.env.HTTPS_PROXY = proxy
+}
 if (fs.existsSync(settingsPath)) {
   fs.copyFileSync(settingsPath, `${settingsPath}.anyrouters.bak`)
 }
@@ -164,7 +359,7 @@ NODE
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    ANYROUTERS_SETTINGS_PATH="$settings_path" ANYROUTERS_MODEL="$MODEL" python3 <<'PY'
+    ANYROUTERS_SETTINGS_PATH="$settings_path" ANYROUTERS_MODEL="$MODEL" ANYROUTERS_CLAUDE_PROXY="$CLAUDE_PROXY" python3 <<'PY'
 import json
 import os
 import shutil
@@ -172,6 +367,7 @@ import time
 
 settings_path = os.environ["ANYROUTERS_SETTINGS_PATH"]
 model = os.environ["ANYROUTERS_MODEL"]
+proxy = os.environ.get("ANYROUTERS_CLAUDE_PROXY", "")
 conflicting = {
     "ANTHROPIC_API_KEY",
     "CLAUDE_CODE_OAUTH_TOKEN",
@@ -215,6 +411,9 @@ for name in conflicting:
 settings.pop("apiKeyHelper", None)
 env["ANTHROPIC_BASE_URL"] = "https://api.anyrouters.com"
 env["ANTHROPIC_MODEL"] = model
+if proxy:
+    env["HTTP_PROXY"] = proxy
+    env["HTTPS_PROXY"] = proxy
 if os.path.exists(settings_path):
     shutil.copy2(settings_path, f"{settings_path}.anyrouters.bak")
 with open(settings_path, "w", encoding="utf-8") as handle:
@@ -316,6 +515,10 @@ if command -v launchctl >/dev/null 2>&1; then
   launchctl setenv ANTHROPIC_MODEL "$MODEL" 2>/dev/null || true
 fi
 echo "Cleared old Claude provider settings that could override AnyRouters."
+if [ -n "$CLAUDE_PROXY" ]; then
+  echo "Keep the proxy app connected. In rule mode, api.anyrouters.com must use the proxy."
+  echo "Claude-specific HTTP_PROXY and HTTPS_PROXY were saved in ~/.claude/settings.json."
+fi
 echo ""
 if command -v claude >/dev/null 2>&1; then
   claude --version || true

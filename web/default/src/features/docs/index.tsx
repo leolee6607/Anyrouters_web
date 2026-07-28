@@ -273,21 +273,36 @@ function CodexUpdateNotice() {
   )
 }
 
-function ClaudeWindowsProxyNotice() {
+function ClaudeProxyNotice() {
+  const { os } = useOsChoice()
+  if (os === 'linux') return null
+  const systemName = os === 'windows' ? 'Windows' : 'macOS'
+  const title =
+    os === 'windows'
+      ? 'Windows 运行前：请先连接代理软件'
+      : 'macOS 直连受限时：请保持代理软件连接'
+
   return (
     <div className='rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100'>
-      <p className='font-semibold'>Windows 运行前：请先连接代理软件</p>
+      <p className='font-semibold'>{title}</p>
       <ul className='mt-1 list-disc space-y-1 pl-5'>
         <li>
-          脚本会分别验证直连和 Windows 已配置的 HTTP/Mixed
+          脚本会分别验证直连和已配置的 HTTP/Mixed
           代理；仅在直连异常、代理链路正常时写入 Claude 专属代理配置。
         </li>
+        {os === 'mac' && (
+          <li>
+            TUN/Fake-IP
+            或透明代理通常可直接使用；仅开系统代理或规则模式时，脚本会读取 macOS
+            已配置的 HTTP/HTTPS 代理。
+          </li>
+        )}
         <li>
           不要求开启全局模式；使用规则模式时，请确保{' '}
           <code>api.anyrouters.com</code> 经过代理。
         </li>
         <li>
-          安装及后续使用期间都要保持代理软件连接。脚本不会修改 Windows
+          安装及后续使用期间都要保持代理软件连接。脚本不会修改 {systemName}
           全局代理，也不会扫描或猜测本地端口。
         </li>
         <li>
@@ -314,7 +329,7 @@ function ApiTakeoverNotice({
   }
   const safety =
     tool === 'claude'
-      ? '修改前会自动备份；不会删除聊天记录，也不会修改 Windows 全局代理、AWS 凭据或其他工具配置。Windows 直连受限时，只会把已验证可用的 HTTP/Mixed 代理写入 Claude 自己的 settings.json。'
+      ? '修改前会自动备份；不会删除聊天记录，也不会修改系统全局代理、AWS 凭据或其他工具配置。直连受限时，只会把已验证可用的 HTTP/Mixed 代理写入 Claude 自己的 settings.json。'
       : '修改前会自动备份；不会写入自定义模型目录，也不会关闭 Codex 原生子代理、工具能力或修改已有推理强度。检测只看 Codex 原生能力，不依赖当前版本号或服务商名称；命令会清理会影响 Codex 的通用 OpenAI API 路由覆盖，但只使用你粘贴的现有 AnyRouters Key，不会创建、替换或停用网站 Key，也不会修改系统代理、AWS 凭据或 CODEX_HOME。'
 
   return (
@@ -642,9 +657,7 @@ function UserFlow({
           {(tool === 'codex' || tool === 'codex-config') && (
             <CodexUpdateNotice />
           )}
-          {tool === 'claude' && os === 'windows' && (
-            <ClaudeWindowsProxyNotice />
-          )}
+          {tool === 'claude' && <ClaudeProxyNotice />}
           {tool === 'codex' && (
             <p className='text-sm font-medium'>
               已经安装 Codex 的用户无需卸载或重装；脚本会自动检测兼容性。
@@ -885,13 +898,14 @@ function ClaudeContextLimitFaq() {
   )
 }
 
-function ClaudeWindowsProxyFaq() {
+function ClaudeProxyFaq() {
   const { os } = useOsChoice()
-  if (os !== 'windows') return null
+  if (os === 'linux') return null
+  const systemName = os === 'windows' ? 'Windows' : 'macOS'
 
   return (
     <section className='border-b py-10'>
-      <SectionTitle>Windows 403 与代理排障</SectionTitle>
+      <SectionTitle>{systemName} 403 与代理排障</SectionTitle>
       <div className='mt-6 rounded-lg border px-4 py-4 text-sm leading-6'>
         <StepTitle>
           提示 Please run /login，并返回 HTML 403，应该怎么办？
@@ -903,7 +917,7 @@ function ClaudeWindowsProxyFaq() {
             &lt;title&gt;403&lt;/title&gt;
           </code>{' '}
           或 <code className='text-foreground'>403 Forbidden</code>
-          ，通常是 Windows 终端中的 Claude 没有走到代理，并不是 Key
+          ，通常是 {systemName} 终端中的 Claude 没有走到代理，并不是 Key
           失效，也不需要反复执行 <code className='text-foreground'>/login</code>
           。浏览器能打开网站也不能证明 Claude
           已经走代理，因为两者读取代理设置的方式不同。
@@ -917,7 +931,7 @@ function ClaudeWindowsProxyFaq() {
           </li>
           <li>
             回到上方“快速接入”，重新复制并运行最新的一键命令。脚本会自动检测
-            Windows 代理、验证 API 链路，并仅更新{' '}
+            {systemName} 已配置的 HTTP/Mixed 代理、验证 API 链路，并仅更新{' '}
             <code className='text-foreground'>~/.claude/settings.json</code>。
           </li>
           <li>
@@ -1569,7 +1583,7 @@ function ToolGuide({
           />
           {tool === 'claude' && (
             <>
-              <ClaudeWindowsProxyFaq />
+              <ClaudeProxyFaq />
               <ClaudeContextLimitFaq />
             </>
           )}
