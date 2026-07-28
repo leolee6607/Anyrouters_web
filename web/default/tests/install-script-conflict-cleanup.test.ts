@@ -103,6 +103,23 @@ test('Windows Claude installer detects a working HTTP proxy without changing the
   expect(source).not.toMatch(/789[0-9]/)
 })
 
+test('macOS Claude installer reuses only a verified HTTP proxy without changing the system proxy', () => {
+  const source = installer('claude.sh')
+
+  expect(source).toContain('macos_system_proxy_candidates')
+  expect(source).toContain('scutil --proxy')
+  expect(source).toContain('ANYROUTERS_PROXY')
+  expect(source).toContain('--noproxy "*"')
+  expect(source).toContain('--noproxy "" --proxy')
+  expect(source).toContain('export NO_PROXY=""')
+  expect(source).toContain('ANYROUTERS_CLAUDE_PROXY')
+  expect(source).toContain("settings.env.HTTP_PROXY = proxy")
+  expect(source).toContain("settings.env.HTTPS_PROXY = proxy")
+  expect(source).not.toContain('networksetup -set')
+  expect(source).not.toMatch(/127\.0\.0\.1:\d{2,5}/)
+  expect(source).not.toMatch(/789[0-9]/)
+})
+
 test('one-line installers keep their official install and fallback paths', () => {
   expect(installer('codex.sh')).toContain(
     'https://chatgpt.com/codex/install.sh'

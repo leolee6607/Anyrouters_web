@@ -37,7 +37,7 @@ test('one-line setup explains its scope below the command', () => {
   expect(source).toContain('未安装或能力不足时才安装或升级')
   expect(source).toContain('这条命令只更新')
   expect(source).toMatch(
-    /不会删除聊天记录，也不会修改(?: Windows 全局|系统)代理、AWS\s+凭据或其他工具配置/
+    /不会删除聊天记录，也不会修改系统(?:全局)?代理、AWS\s+凭据或其他工具配置/
   )
   expect(source).toMatch(/不会写入自定义模型目录，也不会关闭\s+Codex 原生子代理/)
   expect(source).toContain('检测只看 Codex 原生能力，不依赖当前版本号或服务商名称')
@@ -80,8 +80,19 @@ test('Claude Code guide explains how to recover from a local context limit', () 
   expect(faq).toContain('通常不是 AnyRouters Key、余额或模型故障')
   expect(faq).toContain('不会自动删除 ~/.claude、skills 或聊天记录')
   expect(source).toMatch(
-    /\{tool === 'claude' && \(\s*<>\s*<ClaudeWindowsProxyFaq \/>\s*<ClaudeContextLimitFaq \/>/
+    /\{tool === 'claude' && \(\s*<>\s*<ClaudeProxyFaq \/>\s*<ClaudeContextLimitFaq \/>/
   )
+})
+
+test('Claude guide explains proxy behavior on both Windows and macOS', () => {
+  expect(source).toContain('function ClaudeProxyNotice()')
+  expect(source).toContain("const systemName = os === 'windows' ? 'Windows' : 'macOS'")
+  expect(source).toMatch(/TUN\/Fake-IP\s+或透明代理通常可直接使用/)
+  expect(source).toMatch(/macOS\s+已配置的 HTTP\/HTTPS 代理/)
+  expect(source).toContain('不会修改 {systemName}')
+  expect(source).toContain('Claude Code 不支持 SOCKS-only 或 PAC 地址')
+  expect(source).toContain('function ClaudeProxyFaq()')
+  expect(source).toContain('<SectionTitle>{systemName} 403 与代理排障</SectionTitle>')
 })
 
 test('developer guides explain where commands run and where configuration is written', () => {
