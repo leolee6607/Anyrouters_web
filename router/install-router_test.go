@@ -200,9 +200,22 @@ exit 1
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !bytes.Contains(settings, []byte(`"CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"`)) {
+		t.Fatalf("settings do not enable gateway model discovery:\n%s", settings)
+	}
 	for _, unexpected := range []string{`"HTTP_PROXY"`, `"HTTPS_PROXY"`} {
 		if bytes.Contains(settings, []byte(unexpected)) {
 			t.Fatalf("direct route unexpectedly wrote %s:\n%s", unexpected, settings)
+		}
+	}
+
+	for _, profileName := range []string{".zshrc", ".zprofile"} {
+		profile, err := os.ReadFile(filepath.Join(tempDir, profileName))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Contains(profile, []byte("export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1")) {
+			t.Fatalf("%s does not enable gateway model discovery:\n%s", profileName, profile)
 		}
 	}
 }

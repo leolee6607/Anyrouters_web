@@ -82,7 +82,27 @@ test('Claude installers clear stale provider selection without deleting AWS cred
     expect(source).not.toMatch(
       /SetEnvironmentVariable\("(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_PROFILE)"/
     )
+    expect(source).toContain('CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY')
   }
+
+  const shellSource = installer('claude.sh')
+  expect(shellSource).toContain(
+    "settings.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'"
+  )
+  expect(shellSource).toContain(
+    'export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1'
+  )
+  expect(shellSource).toContain(
+    'launchctl setenv CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY 1'
+  )
+
+  const powershellSource = installer('claude.ps1')
+  expect(powershellSource).toContain(
+    '$envBlock["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] = "1"'
+  )
+  expect(powershellSource).toContain(
+    '[Environment]::SetEnvironmentVariable("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "1", "User")'
+  )
 })
 
 test('Windows Claude installer detects a working HTTP proxy without changing the system proxy', () => {

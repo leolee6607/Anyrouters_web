@@ -982,7 +982,8 @@ $Conflicting = @(
   "CLAUDE_CODE_USE_FOUNDRY",
   "CLAUDE_CODE_USE_MANTLE",
   "CLAUDE_CODE_USE_ANTHROPIC_AWS",
-  "ANTHROPIC_AWS_WORKSPACE_ID"
+  "ANTHROPIC_AWS_WORKSPACE_ID",
+  "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"
 )
 foreach ($Name in $Conflicting) {
   [Environment]::SetEnvironmentVariable($Name, $null, "User")
@@ -1004,11 +1005,13 @@ foreach ($Name in ($Conflicting + @("ANTHROPIC_AUTH_TOKEN"))) {
 }
 $Settings.env | Add-Member -Force -NotePropertyName ANTHROPIC_BASE_URL -NotePropertyValue "${ANTHROPIC_BASE}"
 $Settings.env | Add-Member -Force -NotePropertyName ANTHROPIC_MODEL -NotePropertyValue "${CLAUDE_DEFAULT_MODEL}"
+$Settings.env | Add-Member -Force -NotePropertyName CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY -NotePropertyValue "1"
 if (Test-Path $SettingsPath) { Copy-Item $SettingsPath "$SettingsPath.anyrouters.bak" -Force }
 $Settings | ConvertTo-Json -Depth 32 | Set-Content -Path $SettingsPath -Encoding UTF8
 [Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "${ANTHROPIC_BASE}", "User")
 [Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", $Key, "User")
-[Environment]::SetEnvironmentVariable("ANTHROPIC_MODEL", "${CLAUDE_DEFAULT_MODEL}", "User")`}
+[Environment]::SetEnvironmentVariable("ANTHROPIC_MODEL", "${CLAUDE_DEFAULT_MODEL}", "User")
+[Environment]::SetEnvironmentVariable("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "1", "User")`}
       />
     )
   }
@@ -1021,12 +1024,13 @@ PROFILE="\${ZDOTDIR:-$HOME}/.zshrc"
 touch "$PROFILE"
 cp "$PROFILE" "$PROFILE.anyrouters.bak" 2>/dev/null || true
 sed -i.bak '/# anyrouters-managed-begin/,/# anyrouters-managed-end/d' "$PROFILE" 2>/dev/null || true
-sed -i.bak '/^export ANTHROPIC_BASE_URL=/d;/^export ANTHROPIC_AUTH_TOKEN=/d;/^export ANTHROPIC_MODEL=/d' "$PROFILE" 2>/dev/null || true
+sed -i.bak '/^export ANTHROPIC_BASE_URL=/d;/^export ANTHROPIC_AUTH_TOKEN=/d;/^export ANTHROPIC_MODEL=/d;/^export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=/d' "$PROFILE" 2>/dev/null || true
 cat >> "$PROFILE" <<EOF
 # anyrouters-managed-begin
 export ANTHROPIC_BASE_URL=${ANTHROPIC_BASE}
 export ANTHROPIC_AUTH_TOKEN=$KEY
 export ANTHROPIC_MODEL=${CLAUDE_DEFAULT_MODEL}
+export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 # anyrouters-managed-end
 EOF
 source "$PROFILE"`}
@@ -1041,12 +1045,13 @@ PROFILE="$HOME/.bashrc"
 touch "$PROFILE"
 cp "$PROFILE" "$PROFILE.anyrouters.bak" 2>/dev/null || true
 sed -i.bak '/# anyrouters-managed-begin/,/# anyrouters-managed-end/d' "$PROFILE" 2>/dev/null || true
-sed -i.bak '/^export ANTHROPIC_BASE_URL=/d;/^export ANTHROPIC_AUTH_TOKEN=/d;/^export ANTHROPIC_MODEL=/d' "$PROFILE" 2>/dev/null || true
+sed -i.bak '/^export ANTHROPIC_BASE_URL=/d;/^export ANTHROPIC_AUTH_TOKEN=/d;/^export ANTHROPIC_MODEL=/d;/^export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=/d' "$PROFILE" 2>/dev/null || true
 cat >> "$PROFILE" <<EOF
 # anyrouters-managed-begin
 export ANTHROPIC_BASE_URL=${ANTHROPIC_BASE}
 export ANTHROPIC_AUTH_TOKEN=$KEY
 export ANTHROPIC_MODEL=${CLAUDE_DEFAULT_MODEL}
+export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 # anyrouters-managed-end
 EOF
 source "$PROFILE"`}
@@ -1534,6 +1539,13 @@ function DeveloperFlow({
         </ManualStep>
 
         <ManualStep index={verifyStep} title='验证'>
+          {kind === 'claude' && (
+            <p className='text-muted-foreground text-sm'>
+              先输入 <code className='text-foreground'>/model</code>
+              ，确认列表中出现带有 <strong>From gateway</strong> 标记的{' '}
+              <code className='text-foreground'>claude-opus-4-6</code>。
+            </p>
+          )}
           <p className='text-muted-foreground text-sm'>
             {isDesktop
               ? '在新建任务的输入框输入'
@@ -1642,7 +1654,8 @@ function CcSwitchGuide({ apiKey, onApiKeyChange }: GuideProps) {
   "env": {
     "ANTHROPIC_BASE_URL": "${ANTHROPIC_BASE}",
     "ANTHROPIC_AUTH_TOKEN": "${KEY}",
-    "ANTHROPIC_MODEL": "${CLAUDE_DEFAULT_MODEL}"
+    "ANTHROPIC_MODEL": "${CLAUDE_DEFAULT_MODEL}",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
   }
 }`}
               />
