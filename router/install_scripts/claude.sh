@@ -474,26 +474,6 @@ write_claude_env() {
   echo "Saved AnyRouters Claude environment to: $profile"
 }
 
-echo "Installing Claude Code ..."
-tmp_installer="$(mktemp)"
-official_installed=0
-if curl -fsSL https://claude.ai/install.sh -o "$tmp_installer"; then
-  if installer_is_html "$tmp_installer"; then
-    echo "Official installer returned an HTML page. Skipping it."
-  elif bash "$tmp_installer"; then
-    official_installed=1
-  else
-    echo "Official installer failed."
-  fi
-else
-  echo "Official installer download failed."
-fi
-rm -f "$tmp_installer"
-if [ "$official_installed" -ne 1 ]; then
-  echo "Using npm fallback without administrator permissions ..."
-  install_claude_with_user_npm
-fi
-
 update_claude_user_settings
 clear_current_claude_env
 export ANTHROPIC_BASE_URL="https://api.anyrouters.com"
@@ -522,6 +502,28 @@ if command -v launchctl >/dev/null 2>&1; then
   launchctl setenv ANTHROPIC_MODEL "$MODEL" 2>/dev/null || true
   launchctl setenv CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY 1 2>/dev/null || true
 fi
+echo "Prepared AnyRouters Claude configuration before installing or upgrading Claude Code."
+
+echo "Installing Claude Code ..."
+tmp_installer="$(mktemp)"
+official_installed=0
+if curl -fsSL https://claude.ai/install.sh -o "$tmp_installer"; then
+  if installer_is_html "$tmp_installer"; then
+    echo "Official installer returned an HTML page. Skipping it."
+  elif bash "$tmp_installer"; then
+    official_installed=1
+  else
+    echo "Official installer failed."
+  fi
+else
+  echo "Official installer download failed."
+fi
+rm -f "$tmp_installer"
+if [ "$official_installed" -ne 1 ]; then
+  echo "Using npm fallback without administrator permissions ..."
+  install_claude_with_user_npm
+fi
+
 echo "Cleared old Claude provider settings that could override AnyRouters."
 if [ -n "$CLAUDE_PROXY" ]; then
   echo "Keep the proxy app connected. In rule mode, api.anyrouters.com must use the proxy."

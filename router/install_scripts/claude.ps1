@@ -603,6 +603,18 @@ function Install-ClaudeWithUserNpm {
   return $true
 }
 
+Clear-ClaudeConflictingEnv
+Update-ClaudeUserSettings
+[Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://api.anyrouters.com", "User")
+[Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", $Key, "User")
+[Environment]::SetEnvironmentVariable("ANTHROPIC_MODEL", $Model, "User")
+[Environment]::SetEnvironmentVariable("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "1", "User")
+$env:ANTHROPIC_BASE_URL = "https://api.anyrouters.com"
+$env:ANTHROPIC_AUTH_TOKEN = $Key
+$env:ANTHROPIC_MODEL = $Model
+$env:CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = "1"
+Write-Host "Prepared AnyRouters Claude configuration before installing or upgrading Claude Code."
+
 Write-Host "Installing Claude Code ..."
 $installed = $false
 try {
@@ -635,16 +647,6 @@ if (-not $installed) {
     return
   }
 }
-Clear-ClaudeConflictingEnv
-Update-ClaudeUserSettings
-[Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://api.anyrouters.com", "User")
-[Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", $Key, "User")
-[Environment]::SetEnvironmentVariable("ANTHROPIC_MODEL", $Model, "User")
-[Environment]::SetEnvironmentVariable("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "1", "User")
-$env:ANTHROPIC_BASE_URL = "https://api.anyrouters.com"
-$env:ANTHROPIC_AUTH_TOKEN = $Key
-$env:ANTHROPIC_MODEL = $Model
-$env:CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = "1"
 Write-Host "Cleared old Claude provider settings that could override AnyRouters."
 Write-Host ""
 $claudeCommand = Find-ClaudeCommand $NpmPrefix
