@@ -256,7 +256,8 @@ $ConflictingClaudeEnvNames = @(
   "CLAUDE_CODE_USE_FOUNDRY",
   "CLAUDE_CODE_USE_MANTLE",
   "CLAUDE_CODE_USE_ANTHROPIC_AWS",
-  "ANTHROPIC_AWS_WORKSPACE_ID"
+  "ANTHROPIC_AWS_WORKSPACE_ID",
+  "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"
 )
 
 function Test-InstallerHtml([string]$Content) {
@@ -349,6 +350,10 @@ function Update-ClaudeUserSettings {
   }
   if (-not $envBlock.Contains("ANTHROPIC_MODEL") -or $envBlock["ANTHROPIC_MODEL"] -ne $Model) {
     $envBlock["ANTHROPIC_MODEL"] = $Model
+    $changed = $true
+  }
+  if (-not $envBlock.Contains("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY") -or $envBlock["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] -ne "1") {
+    $envBlock["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] = "1"
     $changed = $true
   }
   if ($ClaudeProxy) {
@@ -635,9 +640,11 @@ Update-ClaudeUserSettings
 [Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://api.anyrouters.com", "User")
 [Environment]::SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", $Key, "User")
 [Environment]::SetEnvironmentVariable("ANTHROPIC_MODEL", $Model, "User")
+[Environment]::SetEnvironmentVariable("CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "1", "User")
 $env:ANTHROPIC_BASE_URL = "https://api.anyrouters.com"
 $env:ANTHROPIC_AUTH_TOKEN = $Key
 $env:ANTHROPIC_MODEL = $Model
+$env:CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = "1"
 Write-Host "Cleared old Claude provider settings that could override AnyRouters."
 Write-Host ""
 $claudeCommand = Find-ClaudeCommand $NpmPrefix

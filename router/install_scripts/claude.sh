@@ -24,6 +24,7 @@ CLAUDE_CODE_USE_FOUNDRY
 CLAUDE_CODE_USE_MANTLE
 CLAUDE_CODE_USE_ANTHROPIC_AWS
 ANTHROPIC_AWS_WORKSPACE_ID
+CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY
 "
 if [ -z "$KEY" ]; then
   echo "X No API key. Run:  curl -fsSL https://anyrouters.com/install/claude.sh | bash -s -- YOUR_KEY"
@@ -316,6 +317,7 @@ const conflicting = [
   'CLAUDE_CODE_USE_MANTLE',
   'CLAUDE_CODE_USE_ANTHROPIC_AWS',
   'ANTHROPIC_AWS_WORKSPACE_ID',
+  'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
   'ANTHROPIC_AUTH_TOKEN',
 ]
 
@@ -345,6 +347,7 @@ for (const name of conflicting) {
 delete settings.apiKeyHelper
 settings.env.ANTHROPIC_BASE_URL = 'https://api.anyrouters.com'
 settings.env.ANTHROPIC_MODEL = model
+settings.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY = '1'
 if (proxy) {
   settings.env.HTTP_PROXY = proxy
   settings.env.HTTPS_PROXY = proxy
@@ -387,6 +390,7 @@ conflicting = {
     "CLAUDE_CODE_USE_MANTLE",
     "CLAUDE_CODE_USE_ANTHROPIC_AWS",
     "ANTHROPIC_AWS_WORKSPACE_ID",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
     "ANTHROPIC_AUTH_TOKEN",
 }
 
@@ -411,6 +415,7 @@ for name in conflicting:
 settings.pop("apiKeyHelper", None)
 env["ANTHROPIC_BASE_URL"] = "https://api.anyrouters.com"
 env["ANTHROPIC_MODEL"] = model
+env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] = "1"
 if proxy:
     env["HTTP_PROXY"] = proxy
     env["HTTPS_PROXY"] = proxy
@@ -450,7 +455,7 @@ write_claude_env() {
     strip_managed && managed && $0 == "# anyrouters-managed-end" { managed = 0; next }
     strip_managed && managed { next }
     !strip_managed && ($0 == "# anyrouters-managed-begin" || $0 == "# anyrouters-managed-end") { next }
-    $0 ~ /^[[:space:]]*(export[[:space:]]+)?(ANTHROPIC_BASE_URL|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_MODEL|ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_CUSTOM_HEADERS|ANTHROPIC_SMALL_FAST_MODEL|ANTHROPIC_DEFAULT_OPUS_MODEL|ANTHROPIC_DEFAULT_SONNET_MODEL|ANTHROPIC_DEFAULT_HAIKU_MODEL|ANTHROPIC_DEFAULT_FABLE_MODEL|ANTHROPIC_BEDROCK_BASE_URL|ANTHROPIC_VERTEX_BASE_URL|ANTHROPIC_VERTEX_PROJECT_ID|CLOUD_ML_REGION|CLAUDE_CODE_USE_BEDROCK|CLAUDE_CODE_USE_VERTEX|CLAUDE_CODE_USE_FOUNDRY|CLAUDE_CODE_USE_MANTLE|CLAUDE_CODE_USE_ANTHROPIC_AWS|ANTHROPIC_AWS_WORKSPACE_ID)[[:space:]]*=/ { next }
+    $0 ~ /^[[:space:]]*(export[[:space:]]+)?(ANTHROPIC_BASE_URL|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_MODEL|ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_CUSTOM_HEADERS|ANTHROPIC_SMALL_FAST_MODEL|ANTHROPIC_DEFAULT_OPUS_MODEL|ANTHROPIC_DEFAULT_SONNET_MODEL|ANTHROPIC_DEFAULT_HAIKU_MODEL|ANTHROPIC_DEFAULT_FABLE_MODEL|ANTHROPIC_BEDROCK_BASE_URL|ANTHROPIC_VERTEX_BASE_URL|ANTHROPIC_VERTEX_PROJECT_ID|CLOUD_ML_REGION|CLAUDE_CODE_USE_BEDROCK|CLAUDE_CODE_USE_VERTEX|CLAUDE_CODE_USE_FOUNDRY|CLAUDE_CODE_USE_MANTLE|CLAUDE_CODE_USE_ANTHROPIC_AWS|ANTHROPIC_AWS_WORKSPACE_ID|CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY)[[:space:]]*=/ { next }
     { print }
   ' "$profile" > "$tmp_profile"
   mv "$tmp_profile" "$profile"
@@ -463,6 +468,7 @@ write_claude_env() {
     echo "export ANTHROPIC_BASE_URL=https://api.anyrouters.com"
     printf 'export ANTHROPIC_AUTH_TOKEN=%s\n' "$(printf '%s' "$KEY" | sed "s/'/'\\\\''/g; s/.*/'&'/")"
     printf 'export ANTHROPIC_MODEL=%s\n' "$(printf '%s' "$MODEL" | sed "s/'/'\\\\''/g; s/.*/'&'/")"
+    echo "export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1"
     printf '# anyrouters-managed-end\n'
   } >> "$profile"
   echo "Saved AnyRouters Claude environment to: $profile"
@@ -493,6 +499,7 @@ clear_current_claude_env
 export ANTHROPIC_BASE_URL="https://api.anyrouters.com"
 export ANTHROPIC_AUTH_TOKEN="$KEY"
 export ANTHROPIC_MODEL="$MODEL"
+export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 case "${SHELL:-}" in
   */zsh)
     write_claude_env "${ZDOTDIR:-$HOME}/.zshrc"
@@ -513,6 +520,7 @@ if command -v launchctl >/dev/null 2>&1; then
   launchctl setenv ANTHROPIC_BASE_URL "https://api.anyrouters.com" 2>/dev/null || true
   launchctl setenv ANTHROPIC_AUTH_TOKEN "$KEY" 2>/dev/null || true
   launchctl setenv ANTHROPIC_MODEL "$MODEL" 2>/dev/null || true
+  launchctl setenv CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY 1 2>/dev/null || true
 fi
 echo "Cleared old Claude provider settings that could override AnyRouters."
 if [ -n "$CLAUDE_PROXY" ]; then
