@@ -220,6 +220,85 @@ exit 1
 	}
 }
 
+func TestClaudeShellInstallerPersistsConfigBeforeOfficialInstallerCanTerminate(t *testing.T) {
+	script, err := installScriptsFS.ReadFile("install_scripts/claude.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempDir := t.TempDir()
+	fakeBin := filepath.Join(tempDir, "bin")
+	if err := os.MkdirAll(fakeBin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(tempDir, "claude.sh")
+	if err := os.WriteFile(scriptPath, script, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeExecutable(t, filepath.Join(fakeBin, "curl"), `#!/bin/sh
+body=/dev/null
+format=
+url=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --proxy|--noproxy) shift 2 ;;
+    -o) body="$2"; shift 2 ;;
+    -w) format="$2"; shift 2 ;;
+    http://*|https://*) url="$1"; shift ;;
+    *) shift ;;
+  esac
+done
+case "$url" in
+  *api.anyrouters.com/v1/models)
+    [ "$body" = /dev/null ] || printf '{"data":[]}\n' > "$body"
+    case "$format" in
+      *content_type*) printf '200|application/json' ;;
+      *) printf '200' ;;
+    esac
+    exit 0
+    ;;
+  *claude.ai/install.sh)
+    printf '#!/bin/sh\nkill -TERM "$PPID"\n' > "$body"
+    exit 0
+    ;;
+esac
+exit 1
+`)
+	writeExecutable(t, filepath.Join(fakeBin, "launchctl"), "#!/bin/sh\nexit 0\n")
+	writeExecutable(t, filepath.Join(fakeBin, "claude"), "#!/bin/sh\necho 'Claude Code test'\n")
+
+	command := exec.Command("bash", scriptPath, "sk-test")
+	command.Env = append(os.Environ(),
+		"HOME="+tempDir,
+		"SHELL=/bin/zsh",
+		"PATH="+fakeBin+":"+os.Getenv("PATH"),
+		"ANYROUTERS_PROXY=",
+		"HTTP_PROXY=",
+		"HTTPS_PROXY=",
+		"http_proxy=",
+		"https_proxy=",
+	)
+	_, _ = command.CombinedOutput()
+
+	settings, err := os.ReadFile(filepath.Join(tempDir, ".claude", "settings.json"))
+	if err != nil {
+		t.Fatalf("settings were not persisted before the official installer exited: %v", err)
+	}
+	if !bytes.Contains(settings, []byte(`"CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"`)) {
+		t.Fatalf("settings do not enable gateway model discovery:\n%s", settings)
+	}
+	for _, profileName := range []string{".zshrc", ".zprofile"} {
+		profile, err := os.ReadFile(filepath.Join(tempDir, profileName))
+		if err != nil {
+			t.Fatalf("%s was not persisted before the official installer exited: %v", profileName, err)
+		}
+		if !bytes.Contains(profile, []byte("export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1")) {
+			t.Fatalf("%s does not enable gateway model discovery:\n%s", profileName, profile)
+		}
+	}
+}
+
 func TestCodexHistoryInstallerRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
