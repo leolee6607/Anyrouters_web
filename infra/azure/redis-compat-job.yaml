@@ -1,0 +1,50 @@
+location: West US 2
+name: job-redis-compat-verify
+type: Microsoft.App/jobs
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    /subscriptions/d5ac7f26-916f-4bcb-920b-7b32386fe42b/resourceGroups/rg-anyrouters-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-anyrouters-prod: {}
+properties:
+  environmentId: /subscriptions/d5ac7f26-916f-4bcb-920b-7b32386fe42b/resourceGroups/rg-anyrouters-prod/providers/Microsoft.App/managedEnvironments/cae-anyrouters-prod
+  configuration:
+    triggerType: Manual
+    replicaTimeout: 300
+    replicaRetryLimit: 0
+    manualTriggerConfig:
+      parallelism: 1
+      replicaCompletionCount: 1
+    secrets:
+      - name: redis-url
+        keyVaultUrl: https://kv-anyrouters-xop4rfme.vault.azure.net/secrets/redis-compat-conn-string
+        identity: /subscriptions/d5ac7f26-916f-4bcb-920b-7b32386fe42b/resourceGroups/rg-anyrouters-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-anyrouters-prod
+  template:
+    containers:
+      - name: redis-compat-verify
+        image: redis:7.2-alpine
+        command:
+          - sh
+          - -c
+        args:
+          - >-
+            set -eu;
+            test "$(redis-cli --no-auth-warning -u "$REDIS_URL" PING)" = PONG;
+            redis-cli --no-auth-warning -u "$REDIS_URL" SET anyrouters:compat:plain ok EX 300 >/dev/null;
+            test "$(redis-cli --no-auth-warning -u "$REDIS_URL" GET anyrouters:compat:plain)" = ok;
+            TX_OUT="$(printf 'MULTI\nSET anyrouters:compat:tx ok EX 300\nGET anyrouters:compat:tx\nEXEC\n' | redis-cli --no-auth-warning -u "$REDIS_URL")";
+            echo "$TX_OUT" | grep -q OK;
+            echo "$TX_OUT" | grep -q ok;
+            echo "Redis PING, SET/GET and MULTI/EXEC passed"
+        env:
+          - name: REDIS_URL
+            secretRef: redis-url
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+    volumes: []
+  workloadProfileName: Consumption
+tags:
+  application: anyrouters
+  component: redis-compat-verification
+  environment: migration
+  managedBy: codex
