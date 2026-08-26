@@ -125,7 +125,8 @@ export function RechargeFormCard({
 
   const usageCredit = useMemo(() => getUsageCreditEstimates(models), [models])
 
-  // Human discount label for the title, e.g. "ChatGPT、Gemini 6折，Claude 8.5折".
+  // Human discount label for the title, e.g.
+  // "ChatGPT 7折，Gemini 5折，Claude 9折".
   // Derived from live per-account rates, so B2B and C-end each see their own.
   const zh = i18n.language?.startsWith('zh')
   const zhe = (r: number) => {
@@ -135,11 +136,10 @@ export function RechargeFormCard({
   const off = (r: number) => Math.round((1 - r) * 100)
   const discountTitle = useMemo(() => {
     const { claude, gpt, gemini } = vendorRates
-    const gg = Math.max(gpt, gemini) // 通常同折，取代表值
     if (zh) {
-      return `原厂官方模型，原生品质绝不降配 · ChatGPT、Gemini ${zhe(gg)}折，Claude ${zhe(claude)}折。`
+      return `原厂官方模型，原生品质绝不降配 · ChatGPT ${zhe(gpt)}折，Gemini ${zhe(gemini)}折，Claude ${zhe(claude)}折。`
     }
-    return `First-party models, never throttled — ChatGPT & Gemini ${off(gg)}% off, Claude ${off(claude)}% off.`
+    return `First-party models, never throttled — ChatGPT ${off(gpt)}% off, Gemini ${off(gemini)}% off, Claude ${off(claude)}% off.`
   }, [vendorRates, zh])
 
   useEffect(() => {

@@ -108,7 +108,7 @@ case "$models_status" in
     ;;
 esac
 
-expected_models='gemini-3-pro-image gemini-3.1-flash-image gemini-3.1-flash-lite gemini-3.1-flash-lite-image gemini-3.1-pro-preview gemini-3.5-flash gemini-omni-flash-preview imagen-4.0-fast-generate-001 imagen-4.0-generate-001 veo-3.0-generate-001 veo-3.1-fast-generate-001 veo-3.1-generate-001 gpt-5.4 gpt-5.5 gpt-5.3-codex gpt-5.2 gpt-5.4-mini gpt-5.6-sol gpt-5.6-terra gpt-5.6-luna gpt-image-2 gpt-5.4-pro claude-opus-4-6 claude-haiku-4-5 claude-sonnet-4-6'
+expected_models='gemini-3-pro-image gemini-3.1-flash-image gemini-3.1-flash-lite gemini-3.1-flash-lite-image gemini-3.1-pro-preview gemini-3.5-flash gemini-3.6-flash gemini-3.7-flash gemini-omni-flash-preview imagen-4.0-fast-generate-001 imagen-4.0-generate-001 veo-3.0-generate-001 veo-3.1-fast-generate-001 veo-3.1-generate-001 gpt-5.4 gpt-5.5 gpt-5.3-codex gpt-5.2 gpt-5.4-mini gpt-5.6-sol gpt-5.6-terra gpt-5.6-luna gpt-image-2 gpt-5.4-pro claude-opus-4-6 claude-haiku-4-5 claude-sonnet-4-6'
 model_count=0
 for model in $expected_models; do
   if ! grep -Eq "\"id\"[[:space:]]*:[[:space:]]*\"$model\"" "$models_file"; then
@@ -227,6 +227,8 @@ run_video_case() {
 }
 
 run_case vertex /v1/chat/completions '{"model":"gemini-3.5-flash","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":8,"stream":false}'
+run_case vertex_36 /v1/chat/completions '{"model":"gemini-3.6-flash","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":8,"stream":false}'
+run_case vertex_37 /v1/chat/completions '{"model":"gemini-3.7-flash","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":8,"stream":false}'
 run_case vertex_flash_image /v1/chat/completions '{"model":"gemini-3.1-flash-image","messages":[{"role":"user","content":"Generate exactly one small blue circle centered on a plain white background."}],"stream":false,"extra_body":{"google":{"image_config":{"aspect_ratio":"1:1","image_size":"1K"}}}}'
 run_case vertex_pro_image /v1/chat/completions '{"model":"gemini-3-pro-image","messages":[{"role":"user","content":"Generate exactly one small blue circle centered on a plain white background."}],"stream":false,"extra_body":{"google":{"image_config":{"aspect_ratio":"1:1","image_size":"1K"}}}}'
 run_video_case

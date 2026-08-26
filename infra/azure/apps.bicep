@@ -13,7 +13,7 @@ param workloadIdentityName string = 'id-anyrouters-prod'
 @description('Existing Key Vault containing the migrated application secrets.')
 param keyVaultName string
 
-@description('Immutable AN main application image tag imported from the latest GCP production revision.')
+@description('Immutable AN main application image tag deployed to Azure production.')
 param mainImageTag string = 'claude-config-3110d83-0819'
 
 @description('Immutable sandbox sidecar image tag imported from the latest GCP production revision.')
