@@ -7,7 +7,8 @@ This document records non-secret evidence for the AN migration from Jiaxuan GCP 
 - Production ingress IP: `20.115.249.109`.
 - Azure resource group: `rg-anyrouters-prod` in `westus2`.
 - Azure Container App: `ca-anyrouters-web`.
-- Active revision: `ca-anyrouters-web--redisfix-20260826`, `Healthy`, `Running`, 100% traffic.
+- Active revision: `ca-anyrouters-web--gemini3637-2`, `Healthy`, `Running`, 100% traffic.
+- Active immutable image: `acranyroutersprod.azurecr.io/new-api:gemini-36-37-5114489-20260826`.
 - Azure MySQL is the only writable production database.
 - Application Redis is `anyrouters-prod-redis-app`, Redis 7.4, `Balanced_B1`, `NoCluster`, private endpoint `10.42.3.5` and TLS.
 - The earlier Azure OSS-cluster cache is retained as a labelled legacy resource and is not used by production.
@@ -64,14 +65,15 @@ The application's transactional Redis usage (`MULTI`/`EXEC`) was incompatible wi
 ## Provider and model coverage
 
 - Latest channel audit: `job-anyrouters-db-channel-audit-51alczc` — Succeeded.
+- The channel ability index was rebuilt from the production administration endpoint after adding the new Gemini aliases: 5 succeeded, 0 failed.
 - Enabled catalog: 25 unique model IDs across four enabled channels.
-- Kongshiai Vertex: 12 IDs covering Gemini text/multimodal, Gemini image, Imagen 4 and Veo 3/3.1 families.
+- Jiaxuan Vertex (`anyrouters-prod`): 12 IDs covering Gemini text/multimodal, Gemini image, Imagen 4 and Veo 3/3.1 families. The temporary Kongshiai credential is paused and is not used by production.
 - Azure eastus: 8 GPT IDs.
 - Azure eastus2: `gpt-image-2` and `gpt-5.4-pro`.
 - AWS AN: Claude Sonnet 4.6, Opus 4.6 and Haiku 4.5.
 - The old AWS global channel remains disabled by design.
 
-Production-domain smoke execution `job-anyrouters-api-smoke-lu8maiu` — Succeeded:
+Production-domain smoke execution `job-anyrouters-api-smoke-k97gm68` — Succeeded (2026-08-26 11:47:59–11:49:40 UTC):
 
 1. `/v1/models` returned all 25 expected enabled IDs.
 2. Vertex text completion returned 200.
@@ -80,6 +82,8 @@ Production-domain smoke execution `job-anyrouters-api-smoke-lu8maiu` — Succeed
 5. Vertex Veo submission returned 200, completed on poll 4, and ranged content download returned 206.
 6. AWS Claude completion returned 200.
 7. Azure GPT Responses returned 200.
+
+This final execution ran after the Gemini 3.6/3.7 image deployment and ability-index rebuild. The superseded smoke execution remains valid historical evidence for the original Azure cutover.
 
 Usage/accounting audit `job-anyrouters-db-usage-audit-t1dznyy` — Succeeded. The smoke proves the active families and catalog exposure; it does not claim a paid sample was generated for every alias individually.
 

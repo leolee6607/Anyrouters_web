@@ -14,7 +14,7 @@ param workloadIdentityName string = 'id-anyrouters-prod'
 param keyVaultName string
 
 @description('Immutable AN main application image tag deployed to Azure production.')
-param mainImageTag string = 'claude-config-3110d83-0819'
+param mainImageTag string = 'gemini-36-37-5114489-20260826'
 
 @description('Immutable sandbox sidecar image tag imported from the latest GCP production revision.')
 param sandboxImageTag string = 'e4-0729'

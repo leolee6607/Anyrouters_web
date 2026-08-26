@@ -12,7 +12,8 @@ param keyVaultName string
 
 param mysqlHost string = 'anyroutersprodmysql.mysql.database.azure.com'
 param vertexChannelId int = 2
-param expectedVertexProjectId string = 'anyrouters-vertex-prod-2608'
+@description('Expected GCP Vertex project ID. Supply this explicitly to prevent accidental cross-project updates.')
+param expectedVertexProjectId string
 
 resource environment 'Microsoft.App/managedEnvironments@2025-07-01' existing = {
   name: containerAppsEnvironmentName
