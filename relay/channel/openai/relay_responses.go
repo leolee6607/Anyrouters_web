@@ -45,6 +45,9 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	// compute usage
 	usage := dto.Usage{}
+	if responsesResponse.Usage == nil {
+		service.MarkUsageSource(c, service.UsageSourceMissing)
+	}
 	if responsesResponse.Usage != nil {
 		usage.PromptTokens = responsesResponse.Usage.InputTokens
 		usage.CompletionTokens = responsesResponse.Usage.OutputTokens
@@ -173,11 +176,13 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			// 非正常结束，使用输出文本的 token 数量
 			completionTokens := service.CountTextToken(tempStr, info.UpstreamModelName)
 			usage.CompletionTokens = completionTokens
+			service.MarkUsageSource(c, service.UsageSourceLocalEstimate)
 		}
 	}
 
 	if usage.PromptTokens == 0 && usage.CompletionTokens != 0 {
 		usage.PromptTokens = info.GetEstimatePromptTokens()
+		service.MarkUsageSource(c, service.UsageSourceLocalEstimate)
 	}
 
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens

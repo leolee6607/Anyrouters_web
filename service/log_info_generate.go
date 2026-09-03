@@ -104,6 +104,9 @@ func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, m
 	if isLocalCountTokens {
 		adminInfo["local_count_tokens"] = isLocalCountTokens
 	}
+	if usageSource := common.GetContextKeyString(ctx, constant.ContextKeyUsageSource); usageSource != "" {
+		adminInfo["usage_source"] = usageSource
+	}
 
 	AppendChannelAffinityAdminInfo(ctx, adminInfo)
 

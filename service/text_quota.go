@@ -200,6 +200,7 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 			CompletionTokens: 0,
 			TotalTokens:      relayInfo.GetEstimatePromptTokens(),
 		}
+		MarkUsageSource(ctx, UsageSourceMissing)
 	}
 
 	summary.PromptTokens = usage.PromptTokens
