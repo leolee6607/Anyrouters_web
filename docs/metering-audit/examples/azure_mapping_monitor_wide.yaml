@@ -1,0 +1,11 @@
+# Azure Monitor 指标导出（整形为宽表 CSV 后）的列映射示例
+# 对账主键用 deployment：Monitor token 指标只有 ModelDeploymentName 维度。
+format: wide
+date_column: Date
+date_formats: ["2006-01-02", "2006-01-02T15:04:05Z"]
+key_column: Deployment
+site_key: deployment
+columns:
+  input_tokens: InputTokens      # ProcessedPromptTokens 的日 Total
+  output_tokens: OutputTokens    # GeneratedTokens 的日 Total
+  requests: Requests             # AzureOpenAIRequests 的日 Total（可选）

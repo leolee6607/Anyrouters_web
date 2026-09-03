@@ -1,0 +1,20 @@
+# Cost Management 日粒度导出（长表：一行一个 meter）的列映射示例
+# 注意：不同计费账户类型（EA/MCA/老 PAYG/FOCUS）列名不同，按实际文件表头改这里即可。
+format: meter_long
+date_column: Date
+date_formats: ["2006-01-02", "01/02/2006"]
+key_column: ResourceId
+site_key: azure_resource
+unit_scale: 1000000              # meter 单位为 1M Tokens；早期 1K meter 改成 1000
+columns:
+  quantity: Quantity
+  meter_name: MeterName
+  cost: CostInBillingCurrency
+  charge_type: ChargeType        # Refund/RoundingAdjustment 自动单列
+meter_rules:                     # 顺序匹配；cached 规则必须在 input 之前
+  - match: '(?i)\bcachd?\b|\bcd\b'
+    direction: cache_read
+  - match: '(?i)\bin(p|put)?\b'
+    direction: input
+  - match: '(?i)\bout(put)?\b'
+    direction: output
