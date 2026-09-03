@@ -58,7 +58,7 @@ type DailyKey struct {
 	ModelSite     string
 }
 
-// DailyRow is one row of the canonical daily usage format (v1).
+// DailyRow is one row of the canonical daily usage format (v1.1).
 type DailyRow struct {
 	Key DailyKey
 
@@ -68,13 +68,17 @@ type DailyRow struct {
 	RetryAttempts       int64
 	ClientDisconnected  int64
 
-	TokensInput      int64
-	TokensOutput     int64
-	TokensCacheRead  int64
-	TokensCacheWrite int64
-	TokensAudioIn    int64
-	TokensAudioOut   int64
-	TokensImage      int64
+	// TokensPromptTotal mirrors the upstream prompt_tokens total and is the
+	// correct value to compare with Azure Monitor InputTokens. TokensInput is
+	// the mutually-exclusive non-cached input bucket used for cost attribution.
+	TokensPromptTotal int64
+	TokensInput       int64
+	TokensOutput      int64
+	TokensCacheRead   int64
+	TokensCacheWrite  int64
+	TokensAudioIn     int64
+	TokensAudioOut    int64
+	TokensImage       int64
 
 	RowsLocalEstimated      int64
 	RowsCacheWriteEstimated int64
@@ -84,14 +88,45 @@ type DailyRow struct {
 	Quota int64
 }
 
-// ChannelMapEntry carries operator-provided channel attribution
-// (channel id -> account label -> Azure resource -> deployment).
+// ChannelMapEntry carries operator-provided channel attribution.
+//
+// A channel can expose several Azure deployments. Deployments maps the model
+// name recorded by the site (upstream name first, site alias as fallback) to
+// the actual Azure ModelDeploymentName. Deployment remains as a backwards-
+// compatible fallback for legacy one-channel/one-deployment configurations.
 type ChannelMapEntry struct {
-	ChannelId    int    `yaml:"channel_id"`
-	ChannelName  string `yaml:"channel_name"`
-	AccountLabel string `yaml:"account_label"`
-	AzureResource string `yaml:"azure_resource"`
-	Deployment   string `yaml:"deployment"`
+	ChannelId     int               `yaml:"channel_id"`
+	ChannelName   string            `yaml:"channel_name"`
+	AccountLabel  string            `yaml:"account_label"`
+	AzureResource string            `yaml:"azure_resource"`
+	Deployment    string            `yaml:"deployment"`
+	Deployments   map[string]string `yaml:"deployments"`
+}
+
+// ResolveDeployment returns the Azure deployment for one exported row.
+// Upstream model names are authoritative when model mapping was used; the
+// site-visible name is retained as a fallback for unmapped rows.
+func (e *ChannelMapEntry) ResolveDeployment(modelUpstream, modelSite string) string {
+	if e == nil {
+		return ""
+	}
+	if deployment := e.Deployments[modelUpstream]; deployment != "" {
+		return deployment
+	}
+	if deployment := e.Deployments[modelSite]; deployment != "" {
+		return deployment
+	}
+	return e.Deployment
+}
+
+// ResourceDeploymentKey is the collision-safe reconciliation key. Azure
+// deployment names are scoped to a Cognitive Services account and therefore
+// are not globally unique across all resources.
+func ResourceDeploymentKey(resource, deployment string) string {
+	if resource == "" || deployment == "" {
+		return ""
+	}
+	return resource + "|" + deployment
 }
 
 // ChannelMap is the top-level channel_map.yaml document.

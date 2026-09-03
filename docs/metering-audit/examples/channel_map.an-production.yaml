@@ -1,0 +1,24 @@
+# AN 当前振川 Azure 渠道的脱敏对账映射。
+# 不包含订阅 ID、邮箱、Key 或连接串。
+channels:
+  - channel_id: 3
+    channel_name: azure-zc-eastus
+    account_label: azure_account_zc
+    azure_resource: foundry-papercoaches
+    deployments:
+      gpt-5.2: gpt-5.2
+      gpt-5.3-codex: gpt-5.3-codex
+      gpt-5.4: gpt-5.4
+      gpt-5.4-mini: gpt-5.4-mini
+      gpt-5.5: gpt-5.5
+      gpt-5.6-luna: gpt-5.6-luna
+      gpt-5.6-sol: gpt-5.6-sol
+      gpt-5.6-terra: gpt-5.6-terra
+
+  - channel_id: 4
+    channel_name: azure-zc-eastus2
+    account_label: azure_account_zc
+    azure_resource: eastus2-test-2
+    deployments:
+      gpt-5.4-pro: gpt-5.4-pro
+      gpt-image-2: gpt-image-2

@@ -63,6 +63,7 @@ func (a *Aggregator) Add(row *LogRow) {
 
 	prompt := int64(row.PromptTokens)
 	completion := int64(row.CompletionTokens)
+	bucket.TokensPromptTotal += prompt
 
 	// Mutually-exclusive token buckets: for OpenAI-style usage, prompt_tokens
 	// is a superset that already contains cache read/write; for Claude-style

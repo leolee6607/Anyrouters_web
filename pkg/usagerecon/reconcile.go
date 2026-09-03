@@ -46,12 +46,12 @@ type DiffRow struct {
 
 // ReconcileResult carries everything the report writer needs.
 type ReconcileResult struct {
-	Rows        []DiffRow
-	Skipped     []string
-	SiteTotal   map[string]float64
-	AzureTotal  map[string]float64
+	Rows          []DiffRow
+	Skipped       []string
+	SiteTotal     map[string]float64
+	AzureTotal    map[string]float64
 	OverThreshold int
-	Threshold   float64
+	Threshold     float64
 }
 
 // LoadSiteCSV reads the canonical daily usage CSV produced by the export
@@ -92,7 +92,17 @@ func LoadSiteCSV(r io.Reader, siteKey string) (map[string]*SiteDaily, error) {
 			bucket = &SiteDaily{Date: date, Key: key, MappingMissing: key == ""}
 			out[id] = bucket
 		}
-		bucket.InputTokens += num(record, "tokens_input")
+		// Azure Monitor InputTokens is the complete prompt token count, including
+		// cached input. New exports carry tokens_prompt_total explicitly. For a
+		// v1.0 export, reconstruct it from the mutually-exclusive input buckets.
+		if _, ok := col["tokens_prompt_total"]; ok {
+			bucket.InputTokens += num(record, "tokens_prompt_total")
+		} else {
+			bucket.InputTokens += num(record, "tokens_input") + num(record, "tokens_cache_read")
+			if _, ok := col["tokens_cache_write"]; ok {
+				bucket.InputTokens += num(record, "tokens_cache_write")
+			}
+		}
 		bucket.OutputTokens += num(record, "tokens_output")
 		bucket.CacheReadTokens += num(record, "tokens_cache_read")
 		bucket.Requests += num(record, "requests_success")
@@ -141,12 +151,12 @@ func Reconcile(site map[string]*SiteDaily, azure map[string]*AzureDaily, skipped
 		baseLabels := rowLabels(s, a, date, now)
 
 		type measure struct {
-			name             string
-			siteVal          float64
-			siteHas          bool
-			azureVal         float64
-			azureHas         bool
-			extraLabel       string
+			name       string
+			siteVal    float64
+			siteHas    bool
+			azureVal   float64
+			azureHas   bool
+			extraLabel string
 		}
 		measures := []measure{}
 		if a != nil || s != nil {

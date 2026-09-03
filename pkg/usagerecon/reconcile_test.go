@@ -186,7 +186,7 @@ func TestReconcileDiffLabelsAndZeroDenominator(t *testing.T) {
 func TestLoadSiteCSVRoundTrip(t *testing.T) {
 	rows := []*DailyRow{{
 		Key:             DailyKey{Date: "2026-08-01", ChannelId: 7, ModelUpstream: "gpt-5.6-dep", ModelSite: "gpt-5.6"},
-		RequestsSuccess: 10, TokensInput: 1000, TokensOutput: 200, TokensCacheRead: 50, Quota: 500000,
+		RequestsSuccess: 10, TokensPromptTotal: 1050, TokensInput: 1000, TokensOutput: 200, TokensCacheRead: 50, Quota: 500000,
 	}}
 	channelMap := &ChannelMap{Channels: []ChannelMapEntry{{
 		ChannelId: 7, ChannelName: "azure-a", AccountLabel: "account_a",
@@ -204,8 +204,82 @@ func TestLoadSiteCSVRoundTrip(t *testing.T) {
 	if bucket == nil {
 		t.Fatalf("missing joined bucket, got keys: %v", keysOf(site))
 	}
-	if bucket.InputTokens != 1000 || bucket.Requests != 10 || bucket.AmountUSD != 1.0 {
+	if bucket.InputTokens != 1050 || bucket.Requests != 10 || bucket.AmountUSD != 1.0 {
 		t.Errorf("bucket = %+v", bucket)
+	}
+}
+
+func TestMultiDeploymentChannelUsesResourceScopedKey(t *testing.T) {
+	rows := []*DailyRow{
+		{
+			Key:             DailyKey{Date: "2026-08-01", ChannelId: 3, ModelUpstream: "gpt-a", ModelSite: "alias-a"},
+			RequestsSuccess: 1, TokensPromptTotal: 100, TokensInput: 100,
+		},
+		{
+			Key:             DailyKey{Date: "2026-08-01", ChannelId: 3, ModelUpstream: "gpt-b", ModelSite: "alias-b"},
+			RequestsSuccess: 1, TokensPromptTotal: 200, TokensInput: 200,
+		},
+	}
+	channelMap := &ChannelMap{Channels: []ChannelMapEntry{{
+		ChannelId: 3, ChannelName: "azure-a", AccountLabel: "account_a",
+		AzureResource: "resource-a",
+		Deployments: map[string]string{
+			"gpt-a": "deployment-a",
+			"gpt-b": "deployment-b",
+		},
+	}}}
+	var buf bytes.Buffer
+	if err := WriteCanonicalCSV(&buf, rows, channelMap); err != nil {
+		t.Fatal(err)
+	}
+	site, err := LoadSiteCSV(bytes.NewReader(buf.Bytes()), "resource_deployment")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := site["2026-08-01\x00resource-a|deployment-a"]; got == nil || got.InputTokens != 100 {
+		t.Fatalf("deployment-a bucket = %+v, keys: %v", got, keysOf(site))
+	}
+	if got := site["2026-08-01\x00resource-a|deployment-b"]; got == nil || got.InputTokens != 200 {
+		t.Fatalf("deployment-b bucket = %+v, keys: %v", got, keysOf(site))
+	}
+}
+
+func TestLoadSiteCSVV10ReconstructsFullPromptTokens(t *testing.T) {
+	legacyCSV := `date,deployment,requests_success,tokens_input,tokens_output,tokens_cache_read,tokens_cache_write,amount_usd,requests_error_logged,retry_attempts,client_disconnected,rows_local_estimated,rows_cache_write_estimated,rows_zero_usage
+2026-08-01,dep-a,1,100,20,40,10,0.1,0,0,0,0,0,0
+`
+	site, err := LoadSiteCSV(strings.NewReader(legacyCSV), "deployment")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := site["2026-08-01\x00dep-a"].InputTokens; got != 150 {
+		t.Fatalf("legacy reconstructed input = %v, want 150", got)
+	}
+}
+
+func TestLoadAzureCSVResourceDeploymentKeyAvoidsCrossResourceCollision(t *testing.T) {
+	m := testMapping(t, "")
+	m.SiteKey = "resource_deployment"
+	m.ResourceColumn = "Resource"
+	if err := m.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	csvData := `Date,Resource,Deployment,InputTokens,OutputTokens,Cost
+2026-08-01,resource-a,same-name,100,20,1
+2026-08-01,resource-b,same-name,200,40,2
+`
+	azure, skipped, err := LoadAzureCSV(strings.NewReader(csvData), m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skipped) != 0 {
+		t.Fatalf("skipped = %v", skipped)
+	}
+	if got := azure["2026-08-01\x00resource-a|same-name"]; got == nil || got.InputTokens != 100 {
+		t.Fatalf("resource-a bucket = %+v", got)
+	}
+	if got := azure["2026-08-01\x00resource-b|same-name"]; got == nil || got.InputTokens != 200 {
+		t.Fatalf("resource-b bucket = %+v", got)
 	}
 }
 

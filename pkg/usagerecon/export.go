@@ -26,20 +26,20 @@ type ExportParams struct {
 
 // Manifest documents one export run so it can be audited and reproduced.
 type Manifest struct {
-	ToolVersion   string `json:"tool_version"`
-	GeneratedAt   string `json:"generated_at"`
-	Timezone      string `json:"timezone"`
-	FromUnix      int64  `json:"from_unix"`
-	ToUnix        int64  `json:"to_unix"`
-	From          string `json:"from"`
-	To            string `json:"to"`
-	LogsScanned   int64  `json:"logs_scanned"`
-	MaxLogId      int    `json:"max_log_id"`
-	RowsExported  int    `json:"rows_exported"`
-	Notes         []string `json:"notes"`
+	ToolVersion  string   `json:"tool_version"`
+	GeneratedAt  string   `json:"generated_at"`
+	Timezone     string   `json:"timezone"`
+	FromUnix     int64    `json:"from_unix"`
+	ToUnix       int64    `json:"to_unix"`
+	From         string   `json:"from"`
+	To           string   `json:"to"`
+	LogsScanned  int64    `json:"logs_scanned"`
+	MaxLogId     int      `json:"max_log_id"`
+	RowsExported int      `json:"rows_exported"`
+	Notes        []string `json:"notes"`
 }
 
-const ToolVersion = "usagetool/1.0.0"
+const ToolVersion = "usagetool/1.1.0"
 
 // OpenDB opens a read-only-usage connection with the same drivers the main
 // application uses, without touching the model package.

@@ -21,11 +21,11 @@ type AzureDaily struct {
 
 	// Present tracks which measures the file actually provided, so the diff
 	// can report "未提供" instead of a fake 0 (核算规则 §6).
-	HasInput    bool
-	HasOutput   bool
+	HasInput     bool
+	HasOutput    bool
 	HasCacheRead bool
-	HasRequests bool
-	HasCost     bool
+	HasRequests  bool
+	HasCost      bool
 
 	DuplicateRowsMerged int
 	// AdjustmentCost accumulates Refund / RoundingAdjustment charge rows;
@@ -63,6 +63,10 @@ func LoadAzureCSV(r io.Reader, m *AzureMapping) (map[string]*AzureDaily, []strin
 		return nil, nil, err
 	}
 	keyIdx, err := need(m.KeyColumn)
+	if err != nil {
+		return nil, nil, err
+	}
+	resourceIdx, err := need(m.ResourceColumn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -124,6 +128,9 @@ func LoadAzureCSV(r io.Reader, m *AzureMapping) (map[string]*AzureDaily, []strin
 			continue
 		}
 		key := get(keyIdx)
+		if m.SiteKey == "resource_deployment" {
+			key = ResourceDeploymentKey(get(resourceIdx), key)
+		}
 		if key == "" {
 			skipped = append(skipped, fmt.Sprintf("line %d: empty key column", line))
 			continue

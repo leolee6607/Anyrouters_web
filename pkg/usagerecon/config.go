@@ -23,8 +23,12 @@ type AzureMapping struct {
 	// KeyColumn joins against the site side (deployment recommended: Azure
 	// Monitor token metrics only carry ModelDeploymentName, not ModelName).
 	KeyColumn string `yaml:"key_column"`
+	// ResourceColumn is optional unless SiteKey is resource_deployment. When
+	// present, the Azure-side key is resource_column + "|" + key_column.
+	ResourceColumn string `yaml:"resource_column"`
 	// SiteKey names the canonical CSV column used as the site-side join key:
-	// "deployment" (default), "model_upstream" or "azure_resource".
+	// "resource_deployment" is recommended when more than one Azure resource
+	// is reconciled in one report. Legacy values remain supported.
 	SiteKey string `yaml:"site_key"`
 
 	Columns struct {
@@ -71,9 +75,12 @@ func (m *AzureMapping) Validate() error {
 		m.SiteKey = "deployment"
 	}
 	switch m.SiteKey {
-	case "deployment", "model_upstream", "azure_resource":
+	case "deployment", "model_upstream", "azure_resource", "resource_deployment":
 	default:
-		return fmt.Errorf("mapping: site_key must be deployment, model_upstream or azure_resource")
+		return fmt.Errorf("mapping: site_key must be deployment, model_upstream, azure_resource or resource_deployment")
+	}
+	if m.SiteKey == "resource_deployment" && m.ResourceColumn == "" {
+		return fmt.Errorf("mapping: resource_column is required when site_key is resource_deployment")
 	}
 	if m.UnitScale == 0 {
 		m.UnitScale = 1
