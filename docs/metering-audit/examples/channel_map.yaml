@@ -1,0 +1,17 @@
+# 渠道归属映射（由运营方维护并提供）
+# account_label 用脱敏标签（account_a/account_b），不使用姓名或邮箱。
+channels:
+  - channel_id: 7
+    channel_name: azure-a
+    account_label: account_a
+    azure_resource: rg-example/res-a
+    # 一条渠道有多个 Azure deployment 时，按站内/上游模型名显式映射。
+    deployments:
+      gpt-5.6: gpt-5.6-dep
+      gpt-5.6-mini: gpt-5.6-mini-dep
+  - channel_id: 8
+    channel_name: azure-b
+    account_label: account_b
+    azure_resource: rg-example/res-b
+    # 兼容旧的“一渠道一部署”配置。
+    deployment: gpt-5.6-dep-b

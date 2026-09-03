@@ -1,0 +1,13 @@
+# Azure Monitor 指标导出（整形为宽表 CSV 后）的列映射示例
+# 多个 Azure 资源合并对账时，用 resource + deployment 联合主键，
+# 避免两个资源内出现同名 deployment 时串账。
+format: wide
+date_column: Date
+date_formats: ["2006-01-02", "2006-01-02T15:04:05Z"]
+resource_column: Resource
+key_column: Deployment
+site_key: resource_deployment
+columns:
+  input_tokens: InputTokens      # ProcessedPromptTokens 的日 Total
+  output_tokens: OutputTokens    # GeneratedTokens 的日 Total
+  requests: Requests             # AzureOpenAIRequests 的日 Total（可选）

@@ -12,6 +12,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 
+	"github.com/gorilla/websocket"
 	"golang.org/x/net/proxy"
 )
 
@@ -166,6 +167,49 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 		proxyClientLock.Unlock()
 		return client, nil
 
+	default:
+		return nil, fmt.Errorf("unsupported proxy scheme: %s, must be http, https, socks5 or socks5h", parsedURL.Scheme)
+	}
+}
+
+// NewWssDialer 创建支持渠道代理的 WebSocket 拨号器。proxyURL 为空时返回
+// DefaultDialer（直连）。Realtime/WSS 流量必须与 HTTP 流量走同一渠道代理，
+// 否则会绕过固定出口 IP 直连上游。
+func NewWssDialer(proxyURL string) (*websocket.Dialer, error) {
+	if proxyURL == "" {
+		return websocket.DefaultDialer, nil
+	}
+	parsedURL, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	switch parsedURL.Scheme {
+	case "http", "https":
+		return &websocket.Dialer{
+			Proxy:            http.ProxyURL(parsedURL),
+			HandshakeTimeout: websocket.DefaultDialer.HandshakeTimeout,
+		}, nil
+	case "socks5", "socks5h":
+		var auth *proxy.Auth
+		if parsedURL.User != nil {
+			auth = &proxy.Auth{User: parsedURL.User.Username()}
+			if password, ok := parsedURL.User.Password(); ok {
+				auth.Password = password
+			}
+		}
+		dialer, err := proxy.SOCKS5("tcp", parsedURL.Host, auth, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+		return &websocket.Dialer{
+			NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+					return contextDialer.DialContext(ctx, network, addr)
+				}
+				return dialer.Dial(network, addr)
+			},
+			HandshakeTimeout: websocket.DefaultDialer.HandshakeTimeout,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported proxy scheme: %s, must be http, https, socks5 or socks5h", parsedURL.Scheme)
 	}

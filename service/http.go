@@ -23,11 +23,40 @@ func CloseResponseBodyGracefully(httpResponse *http.Response) {
 	}
 }
 
+// providerRequestIdHeaders are the request-id headers real upstreams attach to
+// responses: Azure API Management (apim-request-id), OpenAI (x-request-id) and
+// Anthropic (request-id). They fill upstream_request_id only when no upstream
+// X-Oneapi-Request-Id was seen, which stays authoritative for chained
+// new-api/one-api instances.
+var providerRequestIdHeaders = []string{"apim-request-id", "x-request-id", "request-id"}
+
+// CaptureUpstreamRequestId records the upstream request id from a response
+// header set into the Gin context for later logging.
+func CaptureUpstreamRequestId(c *gin.Context, header http.Header) {
+	if c == nil || header == nil {
+		return
+	}
+	if v := header.Get(common.RequestIdKey); v != "" {
+		c.Set(common.UpstreamRequestIdKey, v)
+		return
+	}
+	if c.GetString(common.UpstreamRequestIdKey) != "" {
+		return
+	}
+	for _, h := range providerRequestIdHeaders {
+		if v := header.Get(h); v != "" {
+			c.Set(common.UpstreamRequestIdKey, v)
+			return
+		}
+	}
+}
+
 // ShouldCopyUpstreamHeader checks whether a given upstream response header
 // should be copied to the client response. It returns false for Content-Length
 // (managed separately) and X-Oneapi-Request-Id (to preserve the local instance
 // ID). When the upstream header is X-Oneapi-Request-Id, the value is captured
-// into the Gin context for later logging.
+// into the Gin context for later logging; provider request-id headers are
+// captured as a fallback but still copied through.
 func ShouldCopyUpstreamHeader(c *gin.Context, k string, v []string) bool {
 	if strings.EqualFold(k, "Content-Length") {
 		return false
@@ -37,6 +66,14 @@ func ShouldCopyUpstreamHeader(c *gin.Context, k string, v []string) bool {
 			c.Set(common.UpstreamRequestIdKey, v[0])
 		}
 		return false
+	}
+	for _, h := range providerRequestIdHeaders {
+		if strings.EqualFold(k, h) {
+			if c != nil && len(v) > 0 && c.GetString(common.UpstreamRequestIdKey) == "" {
+				c.Set(common.UpstreamRequestIdKey, v[0])
+			}
+			return true
+		}
 	}
 	return true
 }

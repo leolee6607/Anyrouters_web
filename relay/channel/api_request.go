@@ -386,7 +386,12 @@ func DoWssRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 		targetHeader.Set(key, value)
 	}
 	targetHeader.Set("Content-Type", c.Request.Header.Get("Content-Type"))
-	targetConn, _, err := websocket.DefaultDialer.Dial(fullRequestURL, targetHeader)
+	wssDialer, err := service.NewWssDialer(info.ChannelSetting.Proxy)
+	if err != nil {
+		logger.LogError(c, "new wss dialer failed: "+common2.MaskSensitiveInfo(err.Error()))
+		return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg("upstream error: proxy configuration invalid"))
+	}
+	targetConn, _, err := wssDialer.Dial(fullRequestURL, targetHeader)
 	if err != nil {
 		return nil, fmt.Errorf("dial failed to %s: %w", fullRequestURL, err)
 	}
@@ -484,13 +489,30 @@ func sendPingData(c *gin.Context, mutex *sync.Mutex) error {
 func DoRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http.Response, error) {
 	return doRequest(c, req, info)
 }
+// isProxyConnectError reports whether a transport error happened while
+// connecting to the configured proxy itself (as opposed to the upstream).
+// Go's http transport prefixes HTTP-proxy dial failures with "proxyconnect",
+// and x/net/proxy reports SOCKS5 failures mentioning the socks dialer.
+func isProxyConnectError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "proxyconnect") ||
+		strings.Contains(msg, "socks connect") ||
+		strings.Contains(msg, "SOCKS5")
+}
+
 func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http.Response, error) {
 	var client *http.Client
 	var err error
 	if info.ChannelSetting.Proxy != "" {
 		client, err = service.NewProxyHttpClient(info.ChannelSetting.Proxy)
 		if err != nil {
-			return nil, fmt.Errorf("new proxy http client failed: %w", err)
+			// The raw error can embed the proxy URL including credentials;
+			// mask the server-side log and hide the message from the client.
+			logger.LogError(c, "new proxy http client failed: "+common2.MaskSensitiveInfo(err.Error()))
+			return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg("upstream error: proxy configuration invalid"))
 		}
 	} else {
 		client = service.GetHttpClient()
@@ -516,16 +538,22 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.LogError(c, "do request failed: "+err.Error())
-		return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg("upstream error: do request failed"))
+		logger.LogError(c, "do request failed: "+common2.MaskSensitiveInfo(err.Error()))
+		// Proxy connect failures must be distinguishable from upstream
+		// failures (and from upstream 401/403/429, which arrive as status
+		// codes): a broken proxy VM should read as a proxy problem, not as a
+		// dead upstream channel.
+		hiddenMsg := "upstream error: do request failed"
+		if info.ChannelSetting.Proxy != "" && isProxyConnectError(err) {
+			hiddenMsg = "proxy error: failed to connect to channel proxy"
+		}
+		return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg(hiddenMsg))
 	}
 	if resp == nil {
 		return nil, errors.New("resp is nil")
 	}
 
-	if upID := resp.Header.Get(common2.RequestIdKey); upID != "" {
-		c.Set(common2.UpstreamRequestIdKey, upID)
-	}
+	service.CaptureUpstreamRequestId(c, resp.Header)
 
 	_ = req.Body.Close()
 	_ = c.Request.Body.Close()

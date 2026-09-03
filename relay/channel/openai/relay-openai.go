@@ -247,6 +247,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			TotalTokens:      info.GetEstimatePromptTokens() + completionTokens,
 		}
 		usageModified = true
+		service.MarkUsageSource(c, service.UsageSourceLocalEstimate)
 	}
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
