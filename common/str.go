@@ -14,9 +14,13 @@ import (
 )
 
 var (
-	maskURLPattern    = regexp.MustCompile(`(http|https)://[^\s/$.?#].[^\s]*`)
+	maskURLPattern    = regexp.MustCompile(`(http|https|socks5h?|wss?)://[^\s/$.?#].[^\s]*`)
 	maskDomainPattern = regexp.MustCompile(`\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b`)
 	maskIPPattern     = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+	// maskUserInfoPattern strips URL userinfo (user:password@) even when the
+	// URL itself is unparseable (e.g. invalid percent escapes in a proxy
+	// password), so credentials never survive into user-facing errors.
+	maskUserInfoPattern = regexp.MustCompile(`://[^/@\s]*@`)
 	// maskApiKeyPattern matches patterns like 'api_key:xxx' or "api_key:xxx" to mask the API key value
 	maskApiKeyPattern = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
 )
@@ -197,6 +201,11 @@ func maskHostForPlainDomain(domain string) string {
 // www.openai.com -> ***.***.com
 // api.openai.com -> ***.***.com
 func MaskSensitiveInfo(str string) string {
+	// Strip URL credentials first: this must not depend on url.Parse
+	// succeeding, because malformed proxy URLs are exactly the ones that show
+	// up in parse-error messages.
+	str = maskUserInfoPattern.ReplaceAllString(str, "://***@")
+
 	// Mask URLs
 	str = maskURLPattern.ReplaceAllStringFunc(str, func(urlStr string) string {
 		u, err := url.Parse(urlStr)

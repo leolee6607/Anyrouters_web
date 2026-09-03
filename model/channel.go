@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -943,6 +944,23 @@ func (channel *Channel) ValidateSettings() error {
 		err := common.Unmarshal([]byte(*channel.Setting), channelParams)
 		if err != nil {
 			return err
+		}
+	}
+	// Fail bad proxy URLs at save time instead of at request time. The error
+	// deliberately never echoes the submitted value: proxy URLs may embed
+	// credentials.
+	if channelParams.Proxy != "" {
+		parsed, err := url.Parse(channelParams.Proxy)
+		if err != nil {
+			return errors.New("proxy url is not parseable (value hidden; check for unescaped special characters in username/password)")
+		}
+		switch parsed.Scheme {
+		case "http", "https", "socks5", "socks5h":
+		default:
+			return fmt.Errorf("unsupported proxy scheme %q, must be http, https, socks5 or socks5h", parsed.Scheme)
+		}
+		if parsed.Host == "" {
+			return errors.New("proxy url is missing a host")
 		}
 	}
 	return nil
