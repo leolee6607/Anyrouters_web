@@ -402,6 +402,7 @@ export function buildChatCompletionPayload(
   // doesn't error out.
   const record = payload as unknown as Record<string, unknown>
   const noSamplingParams =
+    config.model.trim() === 'gpt-6-astra' ||
     /claude/i.test(config.model) ||
     /\b(gpt-5|gpt5|o\d)\b/i.test(config.model) ||
     /codex|gpt-5\.\d|chatgpt/i.test(config.model)

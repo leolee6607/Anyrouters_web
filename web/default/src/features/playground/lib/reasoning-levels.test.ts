@@ -24,11 +24,19 @@ import {
 } from './reasoning-levels'
 
 describe('reasoning level capabilities', () => {
+  test('recognizes Astra and maps fast to supported low effort', () => {
+    assert.equal(supportsReasoningLevel('gpt-6-astra'), true)
+    assert.equal(reasoningEffortForModel('gpt-6-astra', 'fast'), 'low')
+    assert.equal(reasoningEffortForModel('gpt-6-astra', 'auto'), undefined)
+    assert.equal(reasoningEffortForModel('gpt-6-astra', 'xhigh'), 'xhigh')
+    assert.equal(reasoningEffortForModel('gpt-6-astra', 'max'), 'max')
+  })
   test('maps GPT reasoning levels to OpenAI efforts', () => {
     assert.equal(supportsReasoningLevel('gpt-5.6-sol'), true)
     assert.equal(reasoningEffortForModel('gpt-5.6-sol', 'fast'), 'minimal')
     assert.equal(reasoningEffortForModel('gpt-5.6-sol', 'auto'), undefined)
     assert.equal(reasoningEffortForModel('gpt-5.6-sol', 'xhigh'), 'xhigh')
+    assert.equal(reasoningEffortForModel('gpt-5.6-sol', 'max'), 'xhigh')
   })
 
   test('maps Claude adaptive levels to supported efforts', () => {

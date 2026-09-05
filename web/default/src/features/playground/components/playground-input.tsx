@@ -64,7 +64,7 @@ import {
   type VideoResolution,
   type VideoAspectRatio,
 } from '../lib/image-models'
-import { supportsReasoningLevel } from '../lib/reasoning-levels'
+import { isAstraModel, supportsReasoningLevel } from '../lib/reasoning-levels'
 import type {
   ModelOption,
   GroupOption,
@@ -277,7 +277,6 @@ export function PlaygroundInput({
                   key={`img-${i}`}
                   className='group/chip relative inline-block shrink-0'
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
                     alt={t('Attached image')}
@@ -353,13 +352,20 @@ export function PlaygroundInput({
               {showReasoningLevel && (
                 <OptionPill
                   label={t('Reasoning')}
-                  value={reasoningLevel}
+                  value={
+                    reasoningLevel === 'max' && !isAstraModel(modelValue)
+                      ? 'xhigh'
+                      : reasoningLevel
+                  }
                   options={[
                     { value: 'fast', label: t('Fast') },
                     { value: 'auto', label: t('Auto') },
                     { value: 'medium', label: t('Medium') },
                     { value: 'high', label: t('High') },
                     { value: 'xhigh', label: t('Extreme') },
+                    ...(isAstraModel(modelValue)
+                      ? [{ value: 'max', label: t('Maximum') }]
+                      : []),
                   ]}
                   onChange={(level) =>
                     onReasoningLevelChange(level as ReasoningLevel)

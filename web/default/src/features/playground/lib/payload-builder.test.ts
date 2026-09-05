@@ -35,6 +35,17 @@ function config(overrides: Partial<PlaygroundConfig>): PlaygroundConfig {
 }
 
 describe('playground reasoning payload', () => {
+  test('Astra removes unsupported sampling parameters and retains tools', () => {
+    const payload = buildChatCompletionPayload(
+      messages,
+      config({ model: 'gpt-6-astra', reasoning_level: 'fast' }),
+      { ...DEFAULT_PARAMETER_ENABLED, temperature: true, top_p: true }
+    )
+    assert.equal(payload.temperature, undefined)
+    assert.equal(payload.top_p, undefined)
+    assert.equal(payload.reasoning_effort, 'low')
+    assert.ok(payload.tools?.length)
+  })
   test('sends selected GPT effort and keeps auto unset', () => {
     const extreme = buildChatCompletionPayload(
       messages,

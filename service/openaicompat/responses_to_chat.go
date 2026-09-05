@@ -32,6 +32,8 @@ func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesRespons
 		}
 		if resp.Usage.InputTokensDetails != nil {
 			usage.PromptTokensDetails.CachedTokens = resp.Usage.InputTokensDetails.CachedTokens
+			usage.PromptTokensDetails.CachedCreationTokens = resp.Usage.InputTokensDetails.EffectiveCacheCreationTokens()
+			usage.PromptTokensDetails.CacheWriteTokens = resp.Usage.InputTokensDetails.CacheWriteTokens
 			usage.PromptTokensDetails.ImageTokens = resp.Usage.InputTokensDetails.ImageTokens
 			usage.PromptTokensDetails.AudioTokens = resp.Usage.InputTokensDetails.AudioTokens
 		}
@@ -43,7 +45,7 @@ func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesRespons
 	created := resp.CreatedAt
 
 	var toolCalls []dto.ToolCallResponse
-	if text == "" && len(resp.Output) > 0 {
+	if len(resp.Output) > 0 {
 		for _, out := range resp.Output {
 			if out.Type != "function_call" {
 				continue
@@ -78,7 +80,6 @@ func ResponsesResponseToChatCompletionsResponse(resp *dto.OpenAIResponsesRespons
 	}
 	if len(toolCalls) > 0 {
 		msg.SetToolCalls(toolCalls)
-		msg.Content = ""
 	}
 
 	out := &dto.OpenAITextResponse{
