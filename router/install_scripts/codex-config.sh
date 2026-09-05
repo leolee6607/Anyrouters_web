@@ -248,6 +248,8 @@ if not isinstance(models, list):
     raise SystemExit("X Codex returned an invalid native model catalog; existing configuration was not changed.")
 
 required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+if model == "gpt-6-astra":
+    required += (model,)
 for slug in required:
     entry = next(
         (item for item in models if isinstance(item, dict) and item.get("slug") == slug),
@@ -288,6 +290,8 @@ for line in current.splitlines(keepends=True):
         continue
 
     if at_root:
+        if model == "gpt-6-astra" and re.match(r"""^model_reasoning_effort\s*=\s*["'](?:none|minimal)["']""", stripped):
+            raise SystemExit("X gpt-6-astra does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed.")
         assignment = re.match(r"^([A-Za-z0-9_-]+)\s*=", stripped)
         if assignment and assignment.group(1) in managed_root_keys:
             continue
@@ -304,6 +308,7 @@ parts.append(
             'name = "AnyRouters"',
             'base_url = "https://api.anyrouters.com/v1"',
             'wire_api = "responses"',
+            'supports_websockets = false',
             'env_key = "OPENAI_API_KEY"',
         ]
     )
@@ -356,3 +361,5 @@ if [ -f "$LEGACY_CATALOG" ]; then
 fi
 echo "Native model catalog, collaboration, tools, plugins, MCP, trust, login, and reasoning effort were preserved."
 echo "Command-Q to fully quit Codex desktop, reopen it, and start a NEW task."
+echo "Configuration is ready; verify the active provider, a real tool call, and site usage before relying on it."
+echo "If Code Mode is unavailable, update or repair the complete official Codex desktop installation."

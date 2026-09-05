@@ -118,7 +118,7 @@ codex_has_required_native_capabilities() {
     rm -rf "$probe_dir"
     return 1
   fi
-  if python3 - "$probe_catalog" <<'PY'
+  if python3 - "$probe_catalog" "$MODEL" <<'PY'
 import json
 import sys
 
@@ -132,7 +132,10 @@ models = payload.get("models") if isinstance(payload, dict) else payload
 if not isinstance(models, list):
     raise SystemExit(1)
 
-for slug in ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"):
+required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+if sys.argv[2] == "gpt-6-astra":
+    required += (sys.argv[2],)
+for slug in required:
     entry = next(
         (item for item in models if isinstance(item, dict) and item.get("slug") == slug),
         None,
@@ -153,7 +156,7 @@ if [ -n "$CODEX_BIN" ] && codex_has_required_native_capabilities "$CODEX_BIN"; t
   echo "Existing compatible Codex detected; skipping installation."
 else
   if [ -n "$CODEX_BIN" ]; then
-    echo "Existing Codex lacks the required native GPT-5.6 capabilities; upgrading it ..."
+    echo "Existing Codex lacks the required native GPT-5.6 capabilities or selected model $MODEL; upgrading it ..."
   else
     echo "Codex CLI was not found; installing it ..."
   fi
@@ -321,6 +324,8 @@ if not isinstance(models, list):
     raise SystemExit("X Codex returned an invalid native model catalog; existing configuration was not changed.")
 
 required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+if model == "gpt-6-astra":
+    required += (model,)
 for slug in required:
     entry = next(
         (item for item in models if isinstance(item, dict) and item.get("slug") == slug),
@@ -358,6 +363,8 @@ for line in current.splitlines(keepends=True):
     elif skip_provider:
         continue
     if at_root:
+        if model == "gpt-6-astra" and re.match(r"""^model_reasoning_effort\s*=\s*["'](?:none|minimal)["']""", stripped):
+            raise SystemExit("X gpt-6-astra does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed.")
         assignment = re.match(r"^([A-Za-z0-9_-]+)\s*=", stripped)
         if assignment and assignment.group(1) in managed_root_keys:
             continue
@@ -374,6 +381,7 @@ parts.append(
             'name = "AnyRouters"',
             'base_url = "https://api.anyrouters.com/v1"',
             'wire_api = "responses"',
+            'supports_websockets = false',
             'env_key = "OPENAI_API_KEY"',
         ]
     )
@@ -425,3 +433,5 @@ if [ -f "$LEGACY_CATALOG" ]; then
 fi
 echo "Native model catalog, collaboration, tools, plugins, MCP, trust, login, and reasoning effort were preserved."
 echo "Open a NEW terminal window and run: codex"
+echo "Configuration is ready; verify /status, a real tool call, and site usage before relying on it."
+echo "If Code Mode is unavailable, repair the complete official Codex installation, including codex-code-mode-host."

@@ -1,5 +1,14 @@
 {
   "translation": {
+    "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "如果 Codex 用的 Key 设置了模型限制，还需要授权对应的 -openai-compact 压缩模型；Codex 中仍填写原模型名。压缩时报 403/503 请联系支持，不要直接取消所有模型限制。",
+    "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "如果提示 Code Mode 不可用，请修复完整的官方 Codex 安装。能正常回复，不代表工具已经可以执行。",
+    "Codex GPT-6 setup updated: September 5, 2026": "Codex GPT-6 接入更新：2026年9月5日",
+    "Connect with gpt-6-astra; GPT-5.6 remains available through /model.": "接入模型为 gpt-6-astra；仍可通过 /model 选择 GPT-5.6。",
+    "The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.": "脚本会检查 GPT-6 原生工具元数据。CLI 不兼容时需要升级；桌面应用也需要单独更新。",
+    "Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.": "使用 AnyRouters 的 /v1 地址，通过 HTTPS 调用 Responses。只填写 Key 不会自动选对服务商。",
+    "Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.": "请新建任务，检查 /status、实际回复、工具调用和用量记录。配置成功不等于完整兼容性验收通过。",
+    "GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.": "GPT-6 推理档位：low / medium / high / xhigh / max。不要沿用 none 或 minimal；加速服务不等于低推理档位。",
+    "Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.": "保留客户端原生上下文限制。长会话、compact 和第三方工具需单独验证；API 接入不包含 ChatGPT 订阅或云端功能。",
     "360": "360",
     "1000": "1000",
     "10000": "10000",

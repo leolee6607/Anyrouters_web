@@ -422,6 +422,7 @@ function Install-NativeCodexConfiguration(
     $catalogEntries = @($resolvedCatalog.Entries)
 
     $wanted = @("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+    if ($SelectedModel -eq "gpt-6-astra") { $wanted += $SelectedModel }
     foreach ($slug in $wanted) {
       $entry = $catalogEntries | Where-Object { (Get-JsonField $_ "slug") -eq $slug } | Select-Object -First 1
       if (-not $entry) {
@@ -439,9 +440,16 @@ function Install-NativeCodexConfiguration(
 name = "AnyRouters"
 base_url = "https://api.anyrouters.com/v1"
 wire_api = "responses"
+supports_websockets = false
 env_key = "OPENAI_API_KEY"
 "@
     $preservedConfig = Preserve-McpAndUnrelatedCodexConfig $configPath
+    if ($SelectedModel -eq "gpt-6-astra") {
+      $rootConfig = [regex]::Split($preservedConfig, '(?m)^\s*\[')[0]
+      if ($rootConfig -match '(?m)^\s*model_reasoning_effort\s*=\s*["''](?:none|minimal)["'']') {
+        throw "X gpt-6-astra does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed."
+      }
+    }
     $configParts = @("model = $modelLiteral`nmodel_provider = `"anyrouters`"")
     if ($preservedConfig) { $configParts += $preservedConfig }
     $configParts += $anyRoutersProvider.Trim()
@@ -552,4 +560,6 @@ Clear-CodexConflictingEnv $Key
 $Key = $null
 Write-Host ""
 Write-Host "Done! Fully quit Codex desktop, reopen it, and start a NEW task."
+Write-Host "Configuration is ready; verify the active provider, a real tool call, and site usage before relying on it."
+Write-Host "If Code Mode is unavailable, update or repair the complete official Codex desktop installation."
 Write-Host "Re-run after every Codex upgrade to verify native model capabilities."

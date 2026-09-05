@@ -32,6 +32,7 @@ import {
   WandSparkles,
   type LucideIcon,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getStatus, getUserGroups } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -260,15 +261,59 @@ function StepTitle({ children }: { children: ReactNode }) {
 }
 
 function CodexUpdateNotice() {
+  const { t } = useTranslation()
   return (
     <div className='rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100'>
-      <p className='font-semibold'>当前版本更新于：2026年7月24日</p>
+      <p className='font-semibold'>
+        {t('Codex GPT-6 setup updated: September 5, 2026')}
+      </p>
       <ol className='mt-1 list-decimal pl-5'>
-        <li>支持 ChatGPT 5.6 全系列</li>
+        <li>
+          {t(
+            'Connect with gpt-6-astra; GPT-5.6 remains available through /model.'
+          )}
+        </li>
         <li>已有兼容 Codex 自动跳过安装，能力不足时才升级</li>
         <li>使用 Codex 原生模型目录，并保留子代理、工具和推理强度</li>
         <li>提供经过校验的一键切回 OpenAI 官方配置</li>
       </ol>
+      <div className='mt-3 space-y-2'>
+        <p>
+          {t(
+            'The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.'
+          )}
+        </p>
+        <p>
+          {t(
+            'If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.'
+          )}
+        </p>
+        <p>
+          {t(
+            'Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.'
+          )}
+        </p>
+        <p>
+          {t(
+            'Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.'
+          )}
+        </p>
+        <p>
+          {t(
+            'GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.'
+          )}
+        </p>
+        <p>
+          {t(
+            'Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.'
+          )}
+        </p>
+        <p>
+          {t(
+            'A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.'
+          )}
+        </p>
+      </div>
     </div>
   )
 }
@@ -576,9 +621,12 @@ function installCommand({
 }) {
   const endpoint = `https://anyrouters.com/install/${tool}`
   if (os === 'windows') {
-    return `[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; $env:ANYROUTERS_KEY="${key}"; irm ${endpoint}.ps1 | iex`
+    const model =
+      tool === 'claude' ? '' : '$env:ANYROUTERS_MODEL="gpt-6-astra"; '
+    return `[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; ${model}$env:ANYROUTERS_KEY="${key}"; irm ${endpoint}.ps1 | iex`
   }
-  return `curl -fsSL ${endpoint}.sh | bash -s -- "${key}"`
+  const model = tool === 'claude' ? '' : 'ANYROUTERS_MODEL=gpt-6-astra '
+  return `curl -fsSL ${endpoint}.sh | ${model}bash -s -- "${key}"`
 }
 
 function codexOfficialRestoreCommand(os: OS) {

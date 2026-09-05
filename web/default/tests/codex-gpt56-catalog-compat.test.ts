@@ -21,6 +21,17 @@ const detectedPowerShell =
     : spawnSync('/bin/sh', ['-lc', 'command -v pwsh'], { encoding: 'utf8' }).stdout
 const pwshBin =
   process.env.PWSH_BIN || detectedPowerShell?.trim().split(/\r?\n/, 1)[0] || ''
+if (process.env.REQUIRE_POWERSHELL_TESTS === '1' && !pwshBin) {
+  throw new Error('PowerShell runtime is required; refusing to skip installer checks')
+}
+// The real installers intentionally manage User-scope environment variables on
+// Windows. Run their fixtures only on a disposable runner, never a personal PC.
+if (
+  process.platform === 'win32' &&
+  process.env.ANYROUTERS_DISPOSABLE_WINDOWS_TEST_HOST !== '1'
+) {
+  throw new Error('Windows installer fixtures require a disposable test host')
+}
 
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
@@ -183,11 +194,12 @@ printf '%s\n' "$*" >> "$LAUNCHCTL_LOG"
 function isolatedPowerShellFixture(
   options: {
     npmShimStderrWarning?: boolean
+    homeName?: string
   } = {}
 ) {
   const root = mkdtempSync(join(tmpdir(), 'anyrouters-codex-native-pwsh-'))
   tempDirs.push(root)
-  const home = join(root, 'home')
+  const home = join(root, options.homeName ?? 'home')
   const bin = join(root, 'bin')
   const codexDir = join(home, '.codex')
   const powerShellProfileDir = join(home, 'Documents', 'WindowsPowerShell')
@@ -338,6 +350,7 @@ name = "Replace Me"
     codexLog,
     powerShellProfile,
     statePath,
+    env,
     run(script: 'codex.ps1' | 'codex-config.ps1' | 'codex-official.ps1') {
       return spawnSync(
         pwshBin,
@@ -374,6 +387,45 @@ test('codex.sh skips installation when the existing Codex has required native ca
   )
   expect(existsSync(run.installerLog)).toBe(false)
 })
+
+for (const script of ['codex.sh', 'codex-config.sh'] as const) {
+  test(`${script} rejects GPT-6 when only GPT-5.6 native metadata is available`, () => {
+    const run = isolatedShellFixture()
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const result = run.run(script)
+    expect(result.status, result.stdout + result.stderr).not.toBe(0)
+    expect(result.stdout + result.stderr).toContain('gpt-6-astra')
+    expect(existsSync(join(run.home, '.codex/config.toml'))).toBe(false)
+  })
+  test(`${script} accepts native GPT-6 and keeps HTTPS Responses without a catalog override`, () => {
+    const run = isolatedShellFixture()
+    const catalog = fixture()
+    catalog.models.push({ slug: 'gpt-6-astra', use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+    writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const result = run.run(script)
+    expect(result.status, result.stdout + result.stderr).toBe(0)
+    const config = readFileSync(join(run.home, '.codex/config.toml'), 'utf8')
+    expect(config).toContain('model = "gpt-6-astra"')
+    expect(config).toContain('wire_api = "responses"')
+    expect(config).toContain('supports_websockets = false')
+    expect(config).not.toContain('model_catalog_json')
+  })
+  test(`${script} refuses an incompatible saved GPT-6 reasoning effort without overwriting it`, () => {
+    const run = isolatedShellFixture()
+    const catalog = fixture()
+    catalog.models.push({ slug: 'gpt-6-astra', use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+    writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    mkdirSync(join(run.home, '.codex'))
+    const config = 'model = "gpt-5.5"\nmodel_reasoning_effort = "none"\n'
+    writeFileSync(join(run.home, '.codex/config.toml'), config)
+    const result = run.run(script)
+    expect(result.status).not.toBe(0)
+    expect(result.stdout + result.stderr).toContain('model_reasoning_effort')
+    expect(readFileSync(join(run.home, '.codex/config.toml'), 'utf8')).toBe(config)
+  })
+}
 
 test('codex.sh requests an upgrade when required native capabilities are missing', () => {
   const run = isolatedShellFixture({ includeLuna: false })
@@ -677,6 +729,61 @@ export HTTPS_PROXY="http://keep-proxy.invalid"
 }
 
 const powerShellTest = pwshBin ? test : test.skip
+for (const script of ['codex.ps1', 'codex-config.ps1'] as const) {
+  powerShellTest(`PowerShell ${script} checks GPT-6 metadata and preserves incompatible settings`, () => {
+    const run = isolatedPowerShellFixture()
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const configPath = join(run.codexDir, 'config.toml')
+    const original = readFileSync(configPath, 'utf8')
+    const missing = run.run(script)
+    expect(missing.status).not.toBe(0)
+    expect(readFileSync(configPath, 'utf8')).toBe(original)
+
+    const catalog = fixture()
+    catalog.models.push({ slug: 'gpt-6-astra', use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+    writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+    for (const effort of ['none', 'minimal']) {
+      const incompatible = original.replace('"xhigh"', `"${effort}"`)
+      writeFileSync(configPath, incompatible)
+      const invalid = run.run(script)
+      expect(invalid.status).not.toBe(0)
+      expect(invalid.stdout + invalid.stderr).toContain('model_reasoning_effort')
+      expect(readFileSync(configPath, 'utf8')).toBe(incompatible)
+    }
+
+    writeFileSync(configPath, original)
+    const valid = run.run(script)
+    expect(valid.status, valid.stdout + valid.stderr).toBe(0)
+    const configured = readFileSync(configPath, 'utf8')
+    expect(configured).toContain('model = "gpt-6-astra"')
+    expect(configured).toContain('supports_websockets = false')
+    expect(configured).toContain('model_reasoning_effort = "xhigh"')
+    expect(configured).not.toContain('model_catalog_json')
+  }, 30_000)
+
+  powerShellTest(`PowerShell ${script} keeps a spaced home and switches GPT-6 back to GPT-5.6`, () => {
+    const run = isolatedPowerShellFixture({ homeName: 'Test User' })
+    const catalog = fixture()
+    catalog.models.push({ slug: 'gpt-6-astra', use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+    writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const first = run.run(script)
+    expect(first.status, first.stdout + first.stderr).toBe(0)
+    const configPath = join(run.codexDir, 'config.toml')
+    expect(readFileSync(configPath, 'utf8')).toContain('model = "gpt-6-astra"')
+
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-5.6-sol' })
+    const switched = run.run(script)
+    expect(switched.status, switched.stdout + switched.stderr).toBe(0)
+    const config = readFileSync(configPath, 'utf8')
+    expect(config).toContain('model = "gpt-5.6-sol"')
+    expect(config).toContain('model_reasoning_effort = "xhigh"')
+    expect(config).toContain('[mcp_servers.notion]')
+    expect(config.charCodeAt(0)).not.toBe(0xfeff)
+    expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+  }, 30_000)
+}
+
 powerShellTest(
   'PowerShell installers execute safely in an isolated Codex home',
   () => {
