@@ -18,13 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type { ChatCompletionRequest, ReasoningLevel } from '../types'
 
-type ReasoningProfile = 'openai' | 'claude'
+type ReasoningProfile = 'openai' | 'claude' | 'astra'
+
+export function isAstraModel(model: string): boolean {
+  return model.trim() === 'gpt-6-astra'
+}
 
 const OPENAI_REASONING_MODEL = /^(?:gpt-5(?:[.-]|$)|codex(?:[.-]|$))/i
 const CLAUDE_ADAPTIVE_MODEL = /^claude-opus-4-(?:6|7|8)(?:-|$)/i
 
 function reasoningProfile(model: string): ReasoningProfile | null {
   const normalized = model.trim()
+  if (isAstraModel(normalized)) return 'astra'
   if (OPENAI_REASONING_MODEL.test(normalized)) return 'openai'
   if (CLAUDE_ADAPTIVE_MODEL.test(normalized)) return 'claude'
   return null
@@ -41,6 +46,11 @@ export function reasoningEffortForModel(
   const profile = reasoningProfile(model)
   if (!profile || level === 'auto') return undefined
 
+  if (profile === 'astra') {
+    if (level === 'fast') return 'low'
+    return level
+  }
+
   if (profile === 'claude') {
     if (level === 'fast') return 'low'
     if (level === 'xhigh') return 'max'
@@ -48,5 +58,7 @@ export function reasoningEffortForModel(
   }
 
   if (level === 'fast') return 'minimal'
+  // A stored Astra selection can survive switching to an older model.
+  if (level === 'max') return 'xhigh'
   return level
 }

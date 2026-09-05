@@ -39,7 +39,13 @@ export type StreamTerminationReason =
   | 'upstream_timeout'
   | 'incomplete'
 
-export type ReasoningLevel = 'fast' | 'auto' | 'medium' | 'high' | 'xhigh'
+export type ReasoningLevel =
+  | 'fast'
+  | 'auto'
+  | 'medium'
+  | 'high'
+  | 'xhigh'
+  | 'max'
 
 export interface ChatCompletionUsage {
   prompt_tokens: number

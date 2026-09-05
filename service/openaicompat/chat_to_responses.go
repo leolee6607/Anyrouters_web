@@ -80,6 +80,13 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 	if req.Model == "" {
 		return nil, errors.New("model is required")
 	}
+	if req.Model == "gpt-6-astra" {
+		switch req.ReasoningEffort {
+		case "", "low", "medium", "high", "xhigh", "max":
+		default:
+			return nil, fmt.Errorf("gpt-6-astra reasoning_effort must be low, medium, high, xhigh, or max")
+		}
+	}
 	if lo.FromPtrOr(req.N, 1) > 1 {
 		return nil, fmt.Errorf("n>1 is not supported in responses compatibility mode")
 	}
@@ -389,6 +396,12 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 	}
 	if req.MaxTokens != nil || req.MaxCompletionTokens != nil {
 		out.MaxOutputTokens = lo.ToPtr(maxOutputTokens)
+	}
+	// Existing playground sessions can retain old sampling controls. Strip
+	// them only for Astra, without changing the original request or other models.
+	if req.Model == "gpt-6-astra" {
+		out.Temperature = nil
+		out.TopP = nil
 	}
 
 	if req.ReasoningEffort != "" {
