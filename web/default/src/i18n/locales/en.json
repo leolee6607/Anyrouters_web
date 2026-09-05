@@ -1,5 +1,14 @@
 {
   "translation": {
+    "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.",
+    "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.",
+    "Codex GPT-6 setup updated: September 5, 2026": "Codex GPT-6 setup updated: September 5, 2026",
+    "Connect with gpt-6-astra; GPT-5.6 remains available through /model.": "Connect with gpt-6-astra; GPT-5.6 remains available through /model.",
+    "The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.": "The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.",
+    "Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.": "Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.",
+    "Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.": "Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.",
+    "GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.": "GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.",
+    "Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.": "Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.",
     "Claude Haiku 4.5 · 轻量极速版，低延迟高性价比，适合高频与简单任务": "Claude Haiku 4.5 · Lightweight and ultra-fast, with low latency and excellent value for frequent and simple tasks",
     "Claude Opus 4.6 · Anthropic 上一代旗舰，复杂推理与编程能力强，与 4.8 同价": "Claude Opus 4.6 · Anthropic's previous-generation flagship, strong at complex reasoning and coding, priced the same as 4.8",
     "Claude Opus 4.8 · Anthropic 最强模型，复杂推理与编程旗舰，长文档与 Agent 任务首选": "Claude Opus 4.8 · Anthropic's most capable model, a flagship for complex reasoning and coding, ideal for long documents and agent tasks",

@@ -1,5 +1,14 @@
 {
   "translation": {
+    "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "Key Codex có giới hạn mô hình cũng cần quyền cho mô hình -openai-compact tương ứng. Trong Codex vẫn dùng tên mô hình gốc. Nếu nén gặp lỗi 403/503, hãy liên hệ hỗ trợ; không bỏ toàn bộ giới hạn mô hình.",
+    "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "Nếu Code Mode không khả dụng, hãy sửa bản cài đặt Codex chính thức đầy đủ. Trả lời thành công chưa chứng minh công cụ có thể chạy.",
+    "Codex GPT-6 setup updated: September 5, 2026": "Cập nhật kết nối Codex GPT-6: ngày 5 tháng 9 năm 2026",
+    "Connect with gpt-6-astra; GPT-5.6 remains available through /model.": "Kết nối bằng gpt-6-astra; vẫn có thể chọn GPT-5.6 qua /model.",
+    "The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.": "Tập lệnh kiểm tra siêu dữ liệu công cụ GPT-6 gốc. Cần cập nhật CLI không tương thích và ứng dụng máy tính riêng biệt.",
+    "Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.": "Dùng địa chỉ /v1 của AnyRouters với Responses qua HTTPS. Chỉ điền Key không tự chọn nhà cung cấp.",
+    "Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.": "Tạo tác vụ mới rồi kiểm tra /status, câu trả lời, gọi công cụ và mức sử dụng. Cấu hình thành công không bảo đảm tương thích đầy đủ.",
+    "GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.": "Mức suy luận GPT-6: low / medium / high / xhigh / max. Không dùng none hoặc minimal. Dịch vụ tăng tốc khác với mức suy luận thấp.",
+    "Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.": "Giữ giới hạn ngữ cảnh gốc. Hội thoại dài, compact và công cụ bên thứ ba cần kiểm thử riêng. API không bao gồm gói ChatGPT hoặc tính năng đám mây.",
     "Claude Haiku 4.5 · 轻量极速版，低延迟高性价比，适合高频与简单任务": "Claude Haiku 4.5 · Mô hình gọn nhẹ, siêu nhanh, độ trễ thấp và hiệu quả chi phí cao, phù hợp với tác vụ đơn giản, tần suất cao",
     "Claude Opus 4.6 · Anthropic 上一代旗舰，复杂推理与编程能力强，与 4.8 同价": "Claude Opus 4.6 · Mẫu flagship thế hệ trước của Anthropic, mạnh về suy luận phức tạp và lập trình, cùng mức giá với 4.8",
     "Claude Opus 4.8 · Anthropic 最强模型，复杂推理与编程旗舰，长文档与 Agent 任务首选": "Claude Opus 4.8 · Mô hình mạnh nhất của Anthropic, flagship cho suy luận phức tạp và lập trình, lý tưởng cho tài liệu dài và tác vụ agent",

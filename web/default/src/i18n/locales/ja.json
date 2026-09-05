@@ -1,5 +1,14 @@
 {
   "translation": {
+    "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "モデル制限付きの Codex Key には、対応する -openai-compact の権限も必要です。Codex では引き続き元のモデル名を指定してください。圧縮時の 403/503 エラーはサポートにお問い合わせください。すべてのモデル制限を解除しないでください。",
+    "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "Code Mode が利用できない場合は、公式 Codex の完全なインストールを修復してください。応答できるだけではツールの動作確認にはなりません。",
+    "Codex GPT-6 setup updated: September 5, 2026": "Codex GPT-6 接続更新：2026年9月5日",
+    "Connect with gpt-6-astra; GPT-5.6 remains available through /model.": "接続モデルは gpt-6-astra。GPT-5.6 は /model で引き続き選べます。",
+    "The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.": "GPT-6 のネイティブツール情報を検証します。非対応の CLI とデスクトップアプリはそれぞれ更新してください。",
+    "Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.": "AnyRouters の /v1 に HTTPS の Responses で接続します。Key だけでは接続先を選択できません。",
+    "Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.": "新規タスクで /status、応答、ツール実行、使用量を確認してください。設定成功だけでは完全な互換性を保証できません。",
+    "GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.": "GPT-6 推論：low / medium / high / xhigh / max。none と minimal は使用しないでください。高速サービスは低推論設定とは異なります。",
+    "Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.": "標準のコンテキスト上限を維持してください。長い会話、compact、外部ツールは別途検証が必要です。API に ChatGPT 契約やクラウド機能は含まれません。",
     "Claude Haiku 4.5 · 轻量极速版，低延迟高性价比，适合高频与简单任务": "Claude Haiku 4.5 · 軽量かつ超高速で、低遅延と高いコストパフォーマンスを備え、頻繁な軽作業に最適",
     "Claude Opus 4.6 · Anthropic 上一代旗舰，复杂推理与编程能力强，与 4.8 同价": "Claude Opus 4.6 · Anthropic の前世代フラッグシップ。複雑な推論とコーディングに強く、4.8 と同価格",
     "Claude Opus 4.8 · Anthropic 最强模型，复杂推理与编程旗舰，长文档与 Agent 任务首选": "Claude Opus 4.8 · Anthropic の最上位モデル。複雑な推論とコーディングのフラッグシップで、長文書やエージェントタスクに最適",

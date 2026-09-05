@@ -12,8 +12,11 @@ const historyScript = readFileSync(
 
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
-  expect(source).toContain('当前版本更新于：2026年7月24日')
-  expect(source).toContain('支持 ChatGPT 5.6 全系列')
+  expect(source).toContain('Codex GPT-6 setup updated: September 5, 2026')
+  expect(source).toContain('Connect with gpt-6-astra; GPT-5.6 remains available through /model.')
+  expect(source).toContain('ANYROUTERS_MODEL=gpt-6-astra')
+  expect(source).toContain('$env:ANYROUTERS_MODEL="gpt-6-astra"')
+  expect(source).toContain('Setup success is not a full compatibility guarantee.')
   expect(source).toContain('已有兼容 Codex 自动跳过安装，能力不足时才升级')
   expect(source).toContain(
     '使用 Codex 原生模型目录，并保留子代理、工具和推理强度'
@@ -50,6 +53,12 @@ test('one-line setup explains its scope below the command', () => {
   )
   expect(source).not.toContain('清理会导致调用串线的同类旧环境变量/旧配置')
   expect(source).not.toContain('基础连接已经关闭')
+})
+
+test('Codex compact guidance preserves restricted Key permissions', () => {
+  expect(source).toContain(
+    'A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.'
+  )
 })
 
 test('success previews keep only the next action', () => {
