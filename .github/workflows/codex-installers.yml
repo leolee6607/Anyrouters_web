@@ -6,7 +6,10 @@ on:
       - 'router/install_scripts/codex*.ps1'
       - 'router/install_scripts/codex*.sh'
       - 'router/install_scripts/claude.ps1'
+      - 'web/default/src/features/docs/index.tsx'
       - 'web/default/tests/codex-gpt56-catalog-compat.test.ts'
+      - 'web/default/tests/codex-ci-coverage.test.ts'
+      - 'web/default/tests/docs-codex-install-guidance.test.ts'
       - 'web/default/tests/install-script-conflict-cleanup.test.ts'
       - '.github/workflows/codex-installers.yml'
 
@@ -15,7 +18,12 @@ permissions:
 
 jobs:
   windows-powershell:
+    name: Codex installers (${{ matrix.powershell }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        powershell: [powershell.exe, pwsh.exe]
     steps:
       - name: Check out
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -25,11 +33,22 @@ jobs:
         with:
           bun-version: '1.3.14'
 
+      - name: Require the selected PowerShell runtime
+        shell: cmd
+        run: where ${{ matrix.powershell }}
+
+      - name: Verify Windows coverage and documentation regressions
+        working-directory: web/default
+        shell: cmd
+        run: bun test tests/codex-ci-coverage.test.ts tests/docs-codex-install-guidance.test.ts
+
       - name: Execute Codex PowerShell installers in an isolated home
         working-directory: web/default
         shell: cmd
         env:
-          PWSH_BIN: powershell.exe
+          PWSH_BIN: ${{ matrix.powershell }}
+          REQUIRE_POWERSHELL_TESTS: '1'
+          ANYROUTERS_DISPOSABLE_WINDOWS_TEST_HOST: '1'
         run: >-
           bun test tests/codex-gpt56-catalog-compat.test.ts
           --test-name-pattern "^PowerShell"

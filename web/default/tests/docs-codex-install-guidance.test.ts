@@ -12,29 +12,39 @@ const historyScript = readFileSync(
 
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
-  expect(source).toContain('当前版本更新于：2026年7月24日')
-  expect(source).toContain('支持 ChatGPT 5.6 全系列')
-  expect(source).toContain('已有兼容 Codex 自动跳过安装，能力不足时才升级')
+  expect(source).toContain('Codex GPT-6 setup updated: September 7, 2026')
+  expect(source).toContain('Connect with gpt-6-astra; GPT-5.6 remains available through /model.')
+  expect(source).toContain('ANYROUTERS_MODEL=gpt-6-astra')
+  expect(source).toContain('$env:ANYROUTERS_MODEL="gpt-6-astra"')
+  expect(source).toContain('Setup success is not a full compatibility guarantee.')
+  expect(source).toContain('Setup checks the runtime and installs or updates it as needed.')
   expect(source).toContain(
-    '使用 Codex 原生模型目录，并保留子代理、工具和推理强度'
+    'Keep the native model catalog, subagents, tools and reasoning settings.'
   )
-  expect(source).toContain('提供经过校验的一键切回 OpenAI 官方配置')
+  expect(source).toContain('Switch back to your official OpenAI subscription using the guide below.')
   const notice = source.slice(
     source.indexOf('function CodexUpdateNotice()'),
     source.indexOf('function ApiTakeoverNotice')
   )
-  expect(notice).toContain('子代理、工具和推理强度')
+  expect(notice).toContain('subagents, tools and reasoning settings')
   expect(source).not.toContain('解决部分计价')
   expect(source).toContain('点击命令框下方「复制」')
-  expect(source).toContain('已有兼容版本会自动跳过安装')
-  expect(source).toContain('已经安装 Codex 的用户无需卸载或重装')
+  expect(source).toContain('已满足运行要求的版本将保持不变')
+  expect(source).toContain('已安装 Codex 的用户可直接运行下方命令，无需提前卸载')
+  expect(source).not.toContain('能力不足')
   expect(source).toContain("<strong className='font-semibold'>")
+})
+
+test('Mac setup upgrades the CLI rather than replacing the desktop app', () => {
+  expect(source).toContain('setup checks Codex CLI compatibility')
+  expect(source).toContain('It does not reinstall the desktop app.')
+  expect(source).toContain('a compatible CLI is kept unchanged')
 })
 
 test('one-line setup explains its scope below the command', () => {
   expect(source).toContain('运行前请注意')
-  expect(source).toContain('这条命令会先检测现有 Codex')
-  expect(source).toContain('未安装或能力不足时才安装或升级')
+  expect(source).toContain('Setup checks Codex CLI, completes any required installation or update')
+  expect(source).toContain('Existing versions that meet the requirements are retained.')
   expect(source).toContain('这条命令只更新')
   expect(source).toMatch(
     /不会删除聊天记录，也不会修改系统(?:全局)?代理、AWS\s+凭据或其他工具配置/
@@ -50,6 +60,12 @@ test('one-line setup explains its scope below the command', () => {
   )
   expect(source).not.toContain('清理会导致调用串线的同类旧环境变量/旧配置')
   expect(source).not.toContain('基础连接已经关闭')
+})
+
+test('Codex compact guidance preserves restricted Key permissions', () => {
+  expect(source).toContain(
+    'A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.'
+  )
 })
 
 test('success previews keep only the next action', () => {
@@ -119,7 +135,7 @@ test('developer guides explain where commands run and where configuration is wri
   expect(source).toContain('如果其他工具仍依赖这些变量，请为它们单独配置')
   expect(source).toMatch(/Codex 升级通常会保留这份配置/)
   expect(source).toContain('codex --version')
-  expect(source).toContain('只能证明已经安装，不能证明模型、工具和子代理能力兼容')
+  expect(source).toContain('由安装程序检查模型和工具支持')
   expect(source).toContain('在终端输入区键入')
 })
 
