@@ -1,5 +1,12 @@
 {
   "translation": {
+    "已安装 Codex 的用户可直接运行下方命令，无需提前卸载。": "Si Codex est déjà installé, exécutez la commande ci-dessous sans le désinstaller.",
+    "已满足运行要求的版本将保持不变。": "Les versions répondant aux exigences sont conservées.",
+    "用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。": "Affiche la version installée. Utilisez la configuration rapide ci-dessus pour vérifier les modèles et outils et effectuer les mises à jour nécessaires. Si votre version répond déjà aux exigences, passez à l’étape 3.",
+    "Setup checks the runtime and installs or updates it as needed.": "Le programme vérifie l’environnement et effectue l’installation ou la mise à jour nécessaire.",
+    "Keep the native model catalog, subagents, tools and reasoning settings.": "Conservez le catalogue natif, les sous-agents, les outils et les réglages de raisonnement.",
+    "Switch back to your official OpenAI subscription using the guide below.": "Revenez à votre abonnement officiel OpenAI à l’aide du guide ci-dessous.",
+    "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.": "Le programme vérifie Codex CLI, effectue les installations ou mises à jour nécessaires, puis configure AnyRouters. Les versions répondant aux exigences sont conservées.",
     "Codex GPT-6 setup updated: September 7, 2026": "Configuration Codex GPT-6 mise à jour : 7 septembre 2026",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Sur macOS, le script vérifie la compatibilité du CLI Codex, l’installe ou le met à jour uniquement si nécessaire, puis sauvegarde et écrit la configuration partagée. Il ne réinstalle pas l’application de bureau.",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "Cette commande vérifie ou met à jour le CLI Codex avant d’écrire la configuration AnyRouters partagée ; un CLI compatible reste inchangé",

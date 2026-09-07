@@ -1,5 +1,12 @@
 {
   "translation": {
+    "已安装 Codex 的用户可直接运行下方命令，无需提前卸载。": "Codex がインストール済みの場合、削除せずに下のコマンドを実行できます。",
+    "已满足运行要求的版本将保持不变。": "要件を満たす既存バージョンは変更しません。",
+    "用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。": "インストール済みバージョンを表示します。上のクイック設定でモデルとツールを確認し、必要な更新を行ってください。要件を満たしていることを確認済みなら、手順 3 に進めます。",
+    "Setup checks the runtime and installs or updates it as needed.": "実行環境を確認し、必要に応じてインストールまたは更新します。",
+    "Keep the native model catalog, subagents, tools and reasoning settings.": "標準モデル一覧、サブエージェント、ツール、推論設定を維持します。",
+    "Switch back to your official OpenAI subscription using the guide below.": "下の手順で OpenAI 公式サブスクリプションに戻せます。",
+    "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.": "Codex CLI を確認し、必要なインストールや更新後に AnyRouters を設定します。要件を満たす既存バージョンは変更しません。",
     "Codex GPT-6 setup updated: September 7, 2026": "Codex GPT-6 接続更新：2026年9月7日",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Mac では Codex CLI の互換性を確認し、必要な場合のみインストール・更新してから共有設定をバックアップ・保存します。デスクトップアプリは再インストールしません。",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "共有 AnyRouters 設定の保存前に Codex CLI を確認・更新します。対応済みの CLI は変更しません",

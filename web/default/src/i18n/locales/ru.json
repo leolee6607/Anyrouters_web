@@ -1,5 +1,12 @@
 {
   "translation": {
+    "已安装 Codex 的用户可直接运行下方命令，无需提前卸载。": "Если Codex уже установлен, выполните команду ниже без предварительного удаления.",
+    "已满足运行要求的版本将保持不变。": "Версии, отвечающие требованиям, остаются без изменений.",
+    "用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。": "Показывает установленную версию. Используйте быструю настройку выше для проверки моделей и инструментов и необходимых обновлений. Если версия уже проверена, переходите к шагу 3.",
+    "Setup checks the runtime and installs or updates it as needed.": "Установщик проверяет среду и при необходимости устанавливает или обновляет компоненты.",
+    "Keep the native model catalog, subagents, tools and reasoning settings.": "Сохраняются встроенный каталог моделей, субагенты, инструменты и настройки рассуждения.",
+    "Switch back to your official OpenAI subscription using the guide below.": "Вернуться к официальной подписке OpenAI можно по инструкции ниже.",
+    "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.": "Установщик проверяет Codex CLI, при необходимости устанавливает или обновляет его, затем настраивает AnyRouters. Подходящие версии остаются без изменений.",
     "Codex GPT-6 setup updated: September 7, 2026": "Настройка Codex GPT-6 обновлена: 7 сентября 2026 г.",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "На macOS скрипт проверяет совместимость Codex CLI, устанавливает или обновляет его только при необходимости, затем сохраняет резервную копию и записывает общие настройки. Настольное приложение не переустанавливается.",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "Команда проверяет или обновляет Codex CLI перед записью общих настроек AnyRouters; совместимый CLI остаётся без изменений",

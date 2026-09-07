@@ -273,9 +273,19 @@ function CodexUpdateNotice() {
             'Connect with gpt-6-astra; GPT-5.6 remains available through /model.'
           )}
         </li>
-        <li>已有兼容 Codex 自动跳过安装，能力不足时才升级</li>
-        <li>使用 Codex 原生模型目录，并保留子代理、工具和推理强度</li>
-        <li>提供经过校验的一键切回 OpenAI 官方配置</li>
+        <li>
+          {t('Setup checks the runtime and installs or updates it as needed.')}
+        </li>
+        <li>
+          {t(
+            'Keep the native model catalog, subagents, tools and reasoning settings.'
+          )}
+        </li>
+        <li>
+          {t(
+            'Switch back to your official OpenAI subscription using the guide below.'
+          )}
+        </li>
       </ol>
       <div className='mt-3 space-y-2'>
         <p>
@@ -376,8 +386,9 @@ function ApiTakeoverNotice({
           )
         : `这条命令只更新 ${toolName} 的 AnyRouters 配置`
   } else if (tool === 'codex') {
-    action =
-      '这条命令会先检测现有 Codex；能力兼容时跳过安装并只更新 AnyRouters 配置，未安装或能力不足时才安装或升级'
+    action = t(
+      'Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.'
+    )
   }
   const safety =
     tool === 'claude'
@@ -679,6 +690,7 @@ function UserFlow({
   toolName: string
   desktopDownload?: boolean
 }) {
+  const { t } = useTranslation()
   const { os } = useOsChoice()
   const key = apiKey.trim() || KEY
   const command = installCommand({ os, tool, key })
@@ -715,7 +727,7 @@ function UserFlow({
           {tool === 'claude' && <ClaudeProxyNotice />}
           {tool === 'codex' && (
             <p className='text-sm font-medium'>
-              已经安装 Codex 的用户无需卸载或重装；脚本会自动检测兼容性。
+              {t('已安装 Codex 的用户可直接运行下方命令，无需提前卸载。')}
             </p>
           )}
           {desktopDownload && (
@@ -740,7 +752,7 @@ function UserFlow({
                 {shellName}，按回车运行。
                 {(tool === 'codex' || tool === 'codex-config') && (
                   <strong className='font-semibold'>
-                    已有兼容版本会自动跳过安装。
+                    {t('已满足运行要求的版本将保持不变。')}
                   </strong>
                 )}
               </span>
@@ -1380,6 +1392,7 @@ function DeveloperFlow({
 }: {
   kind: 'codex-desktop' | 'codex-cli' | 'claude'
 }) {
+  const { t } = useTranslation()
   const { os } = useOsChoice()
   const isCodex = kind !== 'claude'
   const isDesktop = kind === 'codex-desktop'
@@ -1436,9 +1449,9 @@ function DeveloperFlow({
               </OfficialInstallLink>
               <p className='text-muted-foreground text-sm'>
                 <code className='text-foreground'>codex --version</code>{' '}
-                只能证明已经安装，不能证明模型、工具和子代理能力兼容。已有用户无需自行重装，
-                请优先使用上方“快速接入”，由脚本按原生能力自动决定跳过还是升级；只有已经确认兼容时，
-                才直接进行第 3 步。
+                {t(
+                  '用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。'
+                )}
               </p>
               <p className='text-muted-foreground text-sm'>
                 在{shellName}中复制并执行下面整行命令：

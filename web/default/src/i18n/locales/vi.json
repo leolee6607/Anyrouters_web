@@ -1,5 +1,12 @@
 {
   "translation": {
+    "已安装 Codex 的用户可直接运行下方命令，无需提前卸载。": "Nếu đã cài Codex, chạy lệnh bên dưới mà không cần gỡ cài đặt trước.",
+    "已满足运行要求的版本将保持不变。": "Phiên bản đã đáp ứng yêu cầu được giữ nguyên.",
+    "用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。": "Hiển thị phiên bản đã cài. Nên dùng thiết lập nhanh ở trên để kiểm tra mô hình, công cụ và cập nhật khi cần. Nếu đã xác nhận phiên bản đáp ứng yêu cầu, chuyển đến bước 3.",
+    "Setup checks the runtime and installs or updates it as needed.": "Trình cài đặt kiểm tra môi trường và cài đặt hoặc cập nhật khi cần.",
+    "Keep the native model catalog, subagents, tools and reasoning settings.": "Giữ danh mục mô hình gốc, tác tử phụ, công cụ và cài đặt suy luận.",
+    "Switch back to your official OpenAI subscription using the guide below.": "Có thể chuyển về gói OpenAI chính thức theo hướng dẫn bên dưới.",
+    "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.": "Trình cài đặt kiểm tra Codex CLI, hoàn tất cài đặt hoặc cập nhật cần thiết rồi cấu hình AnyRouters. Phiên bản đã đáp ứng yêu cầu được giữ nguyên.",
     "Codex GPT-6 setup updated: September 7, 2026": "Cập nhật kết nối Codex GPT-6: ngày 7 tháng 9 năm 2026",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Trên Mac, tập lệnh kiểm tra khả năng tương thích của Codex CLI, chỉ cài hoặc nâng cấp khi cần, rồi sao lưu và ghi cấu hình dùng chung. Không cài lại ứng dụng máy tính.",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "Lệnh này kiểm tra hoặc nâng cấp Codex CLI trước khi ghi cấu hình AnyRouters dùng chung; CLI tương thích được giữ nguyên",

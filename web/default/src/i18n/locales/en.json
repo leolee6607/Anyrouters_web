@@ -1,5 +1,12 @@
 {
   "translation": {
+    "已安装 Codex 的用户可直接运行下方命令，无需提前卸载。": "If Codex is already installed, run the command below without uninstalling it first.",
+    "已满足运行要求的版本将保持不变。": "Existing versions that meet the requirements are retained.",
+    "用于查看已安装版本。建议使用上方“快速接入”，由安装程序检查模型和工具支持，并按需完成更新。已确认当前版本满足运行要求的用户，可直接进行第 3 步。": "Displays the installed version. We recommend Quick setup above to check model and tool support and apply any required updates. If you have already verified that your version meets the requirements, continue to step 3.",
+    "Setup checks the runtime and installs or updates it as needed.": "Setup checks the runtime and installs or updates it as needed.",
+    "Keep the native model catalog, subagents, tools and reasoning settings.": "Keep the native model catalog, subagents, tools and reasoning settings.",
+    "Switch back to your official OpenAI subscription using the guide below.": "Switch back to your official OpenAI subscription using the guide below.",
+    "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.": "Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.",
     "Codex GPT-6 setup updated: September 7, 2026": "Codex GPT-6 setup updated: September 7, 2026",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged",

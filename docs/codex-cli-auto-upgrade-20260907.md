@@ -53,15 +53,14 @@ Mac mini 的人工升级和基本使用已获用户确认；本次自动升级�
 `test/codex-gpt6-cross-platform` 分支，不覆盖另一个有用户修改的工作区。
 版本名称 `codexcli-20260907`，实际发布再固定合并提交 SHA 和镜像 digest。
 
-AN 当前核对为家璇订阅 `d5ac7f26-916f-4bcb-920b-7b32386fe42b` 的
-`rg-anyrouters-prod / ca-anyrouters-web`，Multiple 模式；
-`ca-anyrouters-web--gpt6-7c1a1439` 承接 100%。
+发布目标为现有 AN 生产 Container App，采用 Multiple 修订模式。
+订阅、资源名称和镜像 digest 记录在私有部署留痕中，不写入公共教程。
 
 需用户临近确认后：
 
 1. `git push origin HEAD:test/codex-gpt6-cross-platform`，更新现有 PR #27。
 2. `gh pr ready 27`，`gh pr checks 27 --watch`，全部通过后按批准的 head SHA 合并。
-3. 用现有 Dockerfile 执行 `az acr build`，在 `acranyroutersprod` 构建
+3. 用现有 Dockerfile 执行 `az acr build`，在现有生产镜像仓库构建
    `new-api:codexcli-20260907-<merge-sha8>` 并记录 digest。
 4. 用 `az containerapp revision copy` 创建新 digest 的 0% 候选修订；旧版保持 100%。
 5. 健康、教程、脚本内容验证后，用 `az containerapp ingress traffic set`
