@@ -43,7 +43,8 @@ test('one-line setup explains its scope below the command', () => {
   expect(source).toContain('运行前请注意')
   expect(source).toContain('Setup checks Codex CLI, completes any required installation or update')
   expect(source).toContain('Existing versions that meet the requirements are retained.')
-  expect(source).toContain('这条命令只更新')
+  expect(source).toContain('This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged')
+  expect(source).not.toContain('这条命令只更新')
   expect(source).toMatch(
     /不会删除聊天记录，也不会修改系统(?:全局)?代理、AWS\s+凭据或其他工具配置/
   )
