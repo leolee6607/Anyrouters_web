@@ -346,6 +346,7 @@ function ApiTakeoverNotice({
   tool: 'codex' | 'codex-config' | 'claude'
 }) {
   const { t } = useTranslation()
+  const { os } = useOsChoice()
   const toolName = tool === 'claude' ? 'Claude Code' : 'Codex'
   let action = `这条命令会安装或升级 ${toolName}，并写入 AnyRouters 配置`
   if (tool === 'codex-config') {
@@ -355,6 +356,11 @@ function ApiTakeoverNotice({
   } else if (tool === 'codex') {
     action = t(
       'Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.'
+    )
+  }
+  if (os === 'windows' && tool !== 'claude') {
+    action = t(
+      'Setup checks Codex CLI and asks before installing or updating it. Declining leaves your configuration unchanged; a compatible CLI needs no update.'
     )
   }
   const safety =

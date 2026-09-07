@@ -2,6 +2,12 @@
 
 Status: user-tested v2, website release approved; publication checks in progress.
 
+## v3: optional CLI installation/update
+
+User requested prompting rather than forcing an installation/update. Both Windows entry points now ask only when no compatible CLI is available. Only explicit Y/Yes consents; N, empty or other responses stop before installation/config writes. Non-interactive prompt failures stop safely. Compatible CLI installations do not prompt. Desktop application installation remains manual. Windows tutorial translations reflect this distinction; macOS behavior is unchanged.
+
+The CI discovery failures were fixture bugs: tmpdir used Windows 8.3 RUNNER~1 paths while Get-ChildItem returned runneradmin paths for the same files. The fake compatibility checker compared strings and rejected the correct fixture. Identify the compatible fixture by content instead; production discovery is unchanged by this correction. Logs: GitHub Actions run 34095920176. User acceptance of v2 does not claim acceptance of the new v3 prompt yet.
+
 ## User test result and publication request
 
 On 2026-09-07 the user tested the v2 package and reported it usable, then requested a website update. The user also confirmed one-click return to official configuration using the existing website script, and approved publication after the release scope and CI/gray-rollout plan were presented. This is user-reported practical acceptance, not a recorded exhaustive tool/compact test. No production changes have been made yet for this branch.

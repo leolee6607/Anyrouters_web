@@ -341,6 +341,17 @@ function Ensure-CompatibleCodexCli {
     Write-Host "Existing compatible Codex detected; skipping installation."
     return $selected
   }
+  Write-Host "Codex CLI is missing or does not meet the requirements for $Model."
+  Write-Host "With your permission, setup will install or update the official Codex CLI."
+  Write-Host "The desktop app will not be reinstalled. Declining keeps the current configuration."
+  try {
+    $answer = Read-Host "Install or update Codex CLI now? [y/N]"
+  } catch {
+    throw "X Interactive confirmation is required. Run in a terminal; existing configuration was not changed."
+  }
+  if (-not $answer -or $answer.Trim() -notin @("y", "yes")) {
+    throw "X CLI installation/update cancelled. Existing configuration was not changed."
+  }
   Write-Host "Installing or updating Codex CLI for the selected model ..."
   Update-CodexCli $selected
   $selected = Resolve-CodexExecutable $false

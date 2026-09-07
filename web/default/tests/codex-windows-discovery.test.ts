@@ -23,7 +23,7 @@ function discovery(script: string, scenario: string) {
   const stale = join(local, 'OpenAI', 'Codex', 'bin', 'alpha', 'codex.exe')
   for (const path of [stable, old, stale]) {
     mkdirSync(resolve(path, '..'), { recursive: true })
-    writeFileSync(path, 'fixture, never executed')
+    writeFileSync(path, path === stable ? 'compatible fixture' : 'incompatible fixture')
   }
   mkdirSync(app)
   const runner = join(root, 'probe.ps1')
@@ -33,12 +33,14 @@ function discovery(script: string, scenario: string) {
     "$ast = [System.Management.Automation.Language.Parser]::ParseFile($env:SCRIPT_UNDER_TEST, [ref]$tokens, [ref]$errors)",
     "if ($errors.Count) { throw 'PowerShell parse failed' }",
     "foreach ($definition in $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false)) { . ([scriptblock]::Create($definition.Extent.Text)) }",
-    "function Test-CodexNativeCompatibility([string]$CodexExe) { return $CodexExe -eq $env:STABLE_CLI }",
+    // Windows may enumerate the long path even when tmpdir() uses an 8.3 alias.
+    // Identify the fixture by its contents, not the spelling of the same path.
+    "function Test-CodexNativeCompatibility([string]$CodexExe) { return (Get-Content -LiteralPath $CodexExe -Raw) -eq 'compatible fixture' }",
     "function Get-Command { param([string]$Name, [switch]$All, $ErrorAction); if ($Name -eq 'codex') { return [pscustomobject]@{ CommandType='Application'; Source=$env:OLD_CLI } }; if ($Name -eq 'Get-AppxPackage') { return [pscustomobject]@{ Name='Get-AppxPackage' } } }",
     "function Get-AppxPackage { param([string]$Name, $ErrorAction); if ($Name -eq 'OpenAI.Codex') { return [pscustomobject]@{ InstallLocation=$env:APP_ROOT } } }",
     "if ($env:SCENARIO -eq 'choose-compatible') {",
     "  $selected = Resolve-CodexExecutable $false",
-    "  if ($selected -ne $env:STABLE_CLI) { throw ('Selected stale or npm CLI instead of compatible CLI: ' + (@{ selected=$selected; expected=$env:STABLE_CLI; localAppData=$env:LOCALAPPDATA; candidates=@(Get-CodexCliCandidates) } | ConvertTo-Json -Compress)) }",
+    "  if (-not $selected -or (Get-Content -LiteralPath $selected -Raw) -ne 'compatible fixture') { throw 'Selected stale or npm CLI instead of compatible CLI' }",
     "  Write-Output 'compatible-selected'",
     "} elseif ($env:SCENARIO -eq 'missing-desktop') {",
     "  try { Assert-CodexDesktopRuntime; throw 'Missing desktop runtime was accepted' }",

@@ -203,6 +203,7 @@ function isolatedPowerShellFixture(
     npmShimStderrWarning?: boolean
     homeName?: string
     upgrade?: 'effective' | 'ineffective'
+    updateAnswer?: string
   } = {}
 ) {
   const root = mkdtempSync(join(tmpdir(), 'anyrouters-codex-native-pwsh-'))
@@ -291,6 +292,7 @@ exit 2
   writeFileSync(
     wrapperPath,
     `param([string]$ScriptPath, [string]$StatePath)
+function Read-Host { param([string]$Prompt); Add-Content -Path $env:PROMPT_LOG -Value $Prompt; return $env:UPDATE_ANSWER }
 if ($env:DESKTOP_SCAN_MUST_NOT_RUN -eq '1') {
   function Get-AppxPackage { throw 'Unexpected desktop installation scan during shared config write' }
 }
@@ -359,6 +361,8 @@ name = "Replace Me"
     UPGRADE_BEHAVIOR: options.upgrade ?? 'ineffective',
     UPGRADED_CATALOG: upgradedFixturePath,
     INSTALLER_LOG: installerLog,
+    UPDATE_ANSWER: options.updateAnswer ?? 'Y',
+    PROMPT_LOG: join(root, 'prompt.log'),
   }
 
   return {
@@ -784,6 +788,25 @@ export HTTPS_PROXY="http://keep-proxy.invalid"
 }
 
 const powerShellTest = pwshBin ? test : test.skip
+for (const answer of ['N', '', 'yes please']) {
+  powerShellTest(`PowerShell declines CLI update for answer ${JSON.stringify(answer)} without changing config`, () => {
+    const run = isolatedPowerShellFixture({ upgrade: 'effective', updateAnswer: answer })
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const before = readFileSync(join(run.codexDir, 'config.toml'), 'utf8')
+    const result = run.run('codex-config.ps1')
+    expect(result.status).not.toBe(0)
+    expect(existsSync(run.installerLog)).toBe(false)
+    expect(readFileSync(join(run.codexDir, 'config.toml'), 'utf8')).toBe(before)
+    expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+  }, 30_000)
+}
+powerShellTest('PowerShell compatible CLI never asks to install or update', () => {
+  const run = isolatedPowerShellFixture({ updateAnswer: 'N' })
+  const result = run.run('codex-config.ps1')
+  expect(result.status, result.stdout + result.stderr).toBe(0)
+  expect(existsSync(run.env.PROMPT_LOG)).toBe(false)
+  expect(existsSync(run.installerLog)).toBe(false)
+}, 30_000)
 powerShellTest('PowerShell shared config write does not require a desktop installation scan', () => {
   const run = isolatedPowerShellFixture({ upgrade: 'effective' })
   Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra', DESKTOP_SCAN_MUST_NOT_RUN: '1' })
