@@ -276,11 +276,7 @@ function CodexUpdateNotice() {
         <li>
           {t('Setup checks the runtime and installs or updates it as needed.')}
         </li>
-        <li>
-          {t(
-            'Keep the native model catalog, subagents, tools and reasoning settings.'
-          )}
-        </li>
+        <li>{t('Switch models and adjust reasoning effort in Codex.')}</li>
         <li>
           {t(
             'Switch back to your official OpenAI subscription using the guide below.'
@@ -290,37 +286,12 @@ function CodexUpdateNotice() {
       <div className='mt-3 space-y-2'>
         <p>
           {t(
-            'On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.'
+            'After setup, reopen Codex and start a new conversation. Contact support if you need help.'
           )}
         </p>
         <p>
           {t(
-            'If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.'
-          )}
-        </p>
-        <p>
-          {t(
-            'Use the AnyRouters /v1 endpoint with Responses over HTTPS. A Key alone does not select the provider.'
-          )}
-        </p>
-        <p>
-          {t(
-            'Start a new task and check /status, a reply, a tool call and usage. Setup success is not a full compatibility guarantee.'
-          )}
-        </p>
-        <p>
-          {t(
-            'GPT-6 reasoning: low / medium / high / xhigh / max. Do not reuse none or minimal. Fast service is not low reasoning.'
-          )}
-        </p>
-        <p>
-          {t(
-            'Keep native context limits. Long sessions, compact and third-party tools need separate tests. API access does not include ChatGPT subscriptions or cloud features.'
-          )}
-        </p>
-        <p>
-          {t(
-            'A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.'
+            'API usage is charged to your AnyRouters balance. ChatGPT subscription benefits are not included.'
           )}
         </p>
       </div>

@@ -16,17 +16,17 @@ test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('Connect with gpt-6-astra; GPT-5.6 remains available through /model.')
   expect(source).toContain('ANYROUTERS_MODEL=gpt-6-astra')
   expect(source).toContain('$env:ANYROUTERS_MODEL="gpt-6-astra"')
-  expect(source).toContain('Setup success is not a full compatibility guarantee.')
+  expect(source).not.toContain('Setup success is not a full compatibility guarantee.')
   expect(source).toContain('Setup checks the runtime and installs or updates it as needed.')
   expect(source).toContain(
-    'Keep the native model catalog, subagents, tools and reasoning settings.'
+    'Switch models and adjust reasoning effort in Codex.'
   )
   expect(source).toContain('Switch back to your official OpenAI subscription using the guide below.')
   const notice = source.slice(
     source.indexOf('function CodexUpdateNotice()'),
     source.indexOf('function ApiTakeoverNotice')
   )
-  expect(notice).toContain('subagents, tools and reasoning settings')
+  expect(notice).not.toContain('subagents')
   expect(source).not.toContain('解决部分计价')
   expect(source).toContain('点击命令框下方「复制」')
   expect(source).toContain('已满足运行要求的版本将保持不变')
@@ -35,9 +35,7 @@ test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain("<strong className='font-semibold'>")
 })
 
-test('Mac setup upgrades the CLI rather than replacing the desktop app', () => {
-  expect(source).toContain('setup checks Codex CLI compatibility')
-  expect(source).toContain('It does not reinstall the desktop app.')
+test('setup retains compatible CLI installations', () => {
   expect(source).toContain('a compatible CLI is kept unchanged')
 })
 
@@ -62,10 +60,22 @@ test('one-line setup explains its scope below the command', () => {
   expect(source).not.toContain('基础连接已经关闭')
 })
 
-test('Codex compact guidance preserves restricted Key permissions', () => {
-  expect(source).toContain(
-    'A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.'
+test('update notice shows user instructions without internal acceptance details', () => {
+  const notice = source.slice(
+    source.indexOf('function CodexUpdateNotice()'),
+    source.indexOf('function ClaudeProxyNotice')
   )
+  expect(notice).toContain('After setup, reopen Codex and start a new conversation.')
+  expect(notice).toContain('API usage is charged to your AnyRouters balance.')
+  for (const detail of ['Code Mode', '/status', '-openai-compact', '403/503', 'Responses over HTTPS', 'compatibility guarantee', 'separate tests']) {
+    expect(notice).not.toContain(detail)
+  }
+  const keys = [...notice.matchAll(/t\(\s*'([^']+)'/g)].map((match) => match[1])
+  for (const lang of ['en', 'zh', 'fr', 'ru', 'ja', 'vi']) {
+    const locale = JSON.parse(readFileSync(new URL(`../src/i18n/locales/${lang}.json`, import.meta.url), 'utf8')).translation
+    for (const key of keys) expect(locale[key]).toBeTruthy()
+    expect(Object.keys(locale).some(key => key.startsWith('A model-restricted Codex Key'))).toBe(false)
+  }
 })
 
 test('success previews keep only the next action', () => {
