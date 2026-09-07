@@ -38,7 +38,7 @@ function discovery(script: string, scenario: string) {
     "function Get-AppxPackage { param([string]$Name, $ErrorAction); if ($Name -eq 'OpenAI.Codex') { return [pscustomobject]@{ InstallLocation=$env:APP_ROOT } } }",
     "if ($env:SCENARIO -eq 'choose-compatible') {",
     "  $selected = Resolve-CodexExecutable $false",
-    "  if ($selected -ne $env:STABLE_CLI) { throw 'Selected stale or npm CLI instead of compatible CLI' }",
+    "  if ($selected -ne $env:STABLE_CLI) { throw ('Selected stale or npm CLI instead of compatible CLI: ' + (@{ selected=$selected; expected=$env:STABLE_CLI; localAppData=$env:LOCALAPPDATA; candidates=@(Get-CodexCliCandidates) } | ConvertTo-Json -Compress)) }",
     "  Write-Output 'compatible-selected'",
     "} elseif ($env:SCENARIO -eq 'missing-desktop') {",
     "  try { Assert-CodexDesktopRuntime; throw 'Missing desktop runtime was accepted' }",
