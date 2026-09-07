@@ -41,7 +41,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createApiKey, fetchTokenKey, searchApiKeys } from '../keys/api'
 import type { ApiResponse, CreatedApiKey } from '../keys/types'
-import { codexMacResetCommand } from './codex-mac-reset'
 
 const ANTHROPIC_BASE = 'https://api.anyrouters.com'
 const CODEX_OFFICIAL_URL =
@@ -762,7 +761,6 @@ function UserFlow({
 
 function CodexOfficialRestoreGuide() {
   const { os } = useOsChoice()
-  const { t } = useTranslation()
   const shellName = os === 'windows' ? 'PowerShell' : '终端'
 
   return (
@@ -802,31 +800,6 @@ function CodexOfficialRestoreGuide() {
           此操作会清理用户环境中的常见 OPENAI/Codex API
           覆盖；如果其他工具也依赖这些变量，请为其他工具使用独立配置。
         </p>
-        {os === 'mac' && (
-          <details className='border-t pt-4'>
-            <summary className='cursor-pointer font-medium'>
-              {t('Mac: back up and reset configuration (optional)')}
-            </summary>
-            <div className='mt-4 space-y-4'>
-              <p>
-                {t(
-                  'Use this only to reset the Mac test package when its exact-backup restore reports changed configuration. Website installations should use the official-switch command above first to clear persistent environment overrides.'
-                )}
-              </p>
-              <p className='text-amber-700 dark:text-amber-300'>
-                {t(
-                  'Quit Codex desktop and all CLI tasks first. This resets the default ~/.codex configuration, signs out, and starts official ChatGPT login. Current model, MCP and permission settings are backed up but no longer loaded. Chat history, project files and plugin files are not deleted. It does not downgrade the CLI.'
-                )}
-              </p>
-              <CodeBlock code={codexMacResetCommand} />
-              <p className='text-muted-foreground'>
-                {t(
-                  'Follow the browser sign-in, reopen Codex, and check official login before running AN setup again. Backups may contain credentials: keep them private. If the command fails, stop and send only the error message to support.'
-                )}
-              </p>
-            </div>
-          </details>
-        )}
       </div>
     </section>
   )

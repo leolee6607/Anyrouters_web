@@ -7,7 +7,6 @@ on:
       - 'router/install_scripts/codex*.sh'
       - 'router/install_scripts/claude.ps1'
       - 'web/default/src/features/docs/index.tsx'
-      - 'web/default/src/features/docs/codex-mac-reset.ts'
       - 'web/default/tests/codex-gpt56-catalog-compat.test.ts'
       - 'web/default/tests/codex-ci-coverage.test.ts'
       - 'web/default/tests/docs-codex-install-guidance.test.ts'

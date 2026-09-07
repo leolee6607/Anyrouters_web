@@ -1,9 +1,5 @@
 {
   "translation": {
-    "Mac: back up and reset configuration (optional)": "Mac：設定をバックアップしてリセット（任意）",
-    "Use this only to reset the Mac test package when its exact-backup restore reports changed configuration. Website installations should use the official-switch command above first to clear persistent environment overrides.": "Mac テストパッケージの復元が設定変更により停止した場合のみ使用してください。公式サイトからのインストールでは、まず上の切り替えコマンドで永続的な環境変数を解除してください。",
-    "Quit Codex desktop and all CLI tasks first. This resets the default ~/.codex configuration, signs out, and starts official ChatGPT login. Current model, MCP and permission settings are backed up but no longer loaded. Chat history, project files and plugin files are not deleted. It does not downgrade the CLI.": "Codex デスクトップとすべての CLI タスクを終了してください。既定の ~/.codex 設定をリセットし、ログアウト後に公式 ChatGPT ログインを開始します。モデル・MCP・権限設定はバックアップされますが読み込まれなくなります。履歴・プロジェクト・プラグインファイルは削除せず、CLI もダウングレードしません。",
-    "Follow the browser sign-in, reopen Codex, and check official login before running AN setup again. Backups may contain credentials: keep them private. If the command fails, stop and send only the error message to support.": "ブラウザーでログインして Codex を開き、公式ログインを確認してから AN を再設定してください。バックアップには認証情報が含まれる場合があるため共有しないでください。エラー時は停止し、エラーメッセージのみサポートへ送ってください。",
     "Codex GPT-6 setup updated: September 7, 2026": "Codex GPT-6 接続更新：2026年9月7日",
     "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Mac では Codex CLI の互換性を確認し、必要な場合のみインストール・更新してから共有設定をバックアップ・保存します。デスクトップアプリは再インストールしません。",
     "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "共有 AnyRouters 設定の保存前に Codex CLI を確認・更新します。対応済みの CLI は変更しません",
