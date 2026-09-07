@@ -8,6 +8,7 @@ on:
       - 'router/install_scripts/claude.ps1'
       - 'web/default/src/features/docs/index.tsx'
       - 'web/default/tests/codex-gpt56-catalog-compat.test.ts'
+      - 'web/default/tests/codex-windows-discovery.test.ts'
       - 'web/default/tests/codex-ci-coverage.test.ts'
       - 'web/default/tests/docs-codex-install-guidance.test.ts'
       - 'web/default/tests/install-script-conflict-cleanup.test.ts'
@@ -51,6 +52,7 @@ jobs:
           ANYROUTERS_DISPOSABLE_WINDOWS_TEST_HOST: '1'
         run: >-
           bun test tests/codex-gpt56-catalog-compat.test.ts
+          tests/codex-windows-discovery.test.ts
           --test-name-pattern "^PowerShell"
 
       - name: Parse Claude PowerShell installer and verify proxy safety checks
