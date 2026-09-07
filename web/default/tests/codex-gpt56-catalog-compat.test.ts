@@ -137,7 +137,14 @@ case "$*" in
     printf 'official-installer-requested\n' >> "$INSTALLER_LOG"
     previous=''
     for argument in "$@"; do
-      if [ "$previous" = '-o' ]; then printf '#!/bin/sh\nexit 0\n' > "$argument"; exit 0; fi
+      if [ "$previous" = '-o' ]; then
+        if [ -n "\${UPGRADE_CATALOG:-}" ]; then
+          printf '#!/bin/sh\ncp "$UPGRADE_CATALOG" "$CATALOG_FIXTURE"\n' > "$argument"
+        else
+          printf '#!/bin/sh\nexit 0\n' > "$argument"
+        fi
+        exit 0
+      fi
       previous="$argument"
     done
     ;;
@@ -427,6 +434,43 @@ for (const script of ['codex.sh', 'codex-config.sh'] as const) {
   })
 }
 
+test('desktop configuration upgrades an incompatible CLI and continues writing shared config', () => {
+  const setup = isolatedShellFixture({ nativeCapabilities: false })
+  const upgraded = join(setup.root, 'upgraded.json')
+  const catalog = fixture()
+  catalog.models.push({ slug: 'gpt-6-astra', multi_agent_version: 'v2', tool_mode: 'code_mode_only', use_responses_lite: true })
+  writeFileSync(upgraded, JSON.stringify(catalog))
+  const result = spawnSync('bash', [join(scriptsDir, 'codex-config.sh'), 'sk-test-native'], {
+    env: { ...setup.env, UPGRADE_CATALOG: upgraded, ANYROUTERS_MODEL: 'gpt-6-astra' }, encoding: 'utf8',
+  })
+  expect(result.status).toBe(0)
+  expect(readFileSync(setup.installerLog, 'utf8').trim().split('\n')).toHaveLength(1)
+  expect(readFileSync(join(setup.home, '.codex/config.toml'), 'utf8')).toContain('model_provider = "anyrouters"')
+  expect(readFileSync(join(setup.home, '.codex/config.toml'), 'utf8')).toContain('model = "gpt-6-astra"')
+})
+
+test('desktop configuration stops after one ineffective CLI upgrade and preserves files', () => {
+  const setup = isolatedShellFixture({ nativeCapabilities: false })
+  const directory = join(setup.home, '.codex')
+  mkdirSync(directory)
+  const original = 'model = "keep-me"\n'
+  writeFileSync(join(directory, 'config.toml'), original)
+  writeFileSync(join(directory, 'auth.json'), 'keep-login')
+  const result = setup.run('codex-config.sh')
+  expect(result.status).not.toBe(0)
+  expect(result.stderr).toContain('still incompatible after one upgrade attempt')
+  expect(readFileSync(setup.installerLog, 'utf8').trim().split('\n')).toHaveLength(1)
+  expect(readFileSync(join(directory, 'config.toml'), 'utf8')).toBe(original)
+  expect(readFileSync(join(directory, 'auth.json'), 'utf8')).toBe('keep-login')
+  expect(existsSync(setup.launchctlLog)).toBe(false)
+})
+
+test('desktop configuration does not upgrade a compatible CLI', () => {
+  const setup = isolatedShellFixture()
+  expect(setup.run('codex-config.sh').status).toBe(0)
+  expect(existsSync(setup.installerLog)).toBe(false)
+})
+
 test('codex.sh requests an upgrade when required native capabilities are missing', () => {
   const run = isolatedShellFixture({ includeLuna: false })
   const result = run.run('codex.sh')
@@ -665,7 +709,7 @@ export HTTPS_PROXY="http://keep-proxy.invalid"
     expect(result.stderr + result.stdout).toContain('gpt-5.6-luna')
     expect(existsSync(join(codexDir, 'config.toml'))).toBe(false)
     expect(existsSync(join(codexDir, 'anyrouters-api-key'))).toBe(false)
-    expect(readdirSync(codexDir).some((name) => name.startsWith('anyrouters-native-backup-'))).toBe(
+    expect((existsSync(codexDir) ? readdirSync(codexDir) : []).some((name) => name.startsWith('anyrouters-native-backup-'))).toBe(
       false
     )
   })

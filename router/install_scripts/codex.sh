@@ -98,8 +98,7 @@ resolve_codex_binary() {
     return 0
   fi
   for candidate in \
-    "$HOME/.local/bin/codex" \
-    "/Applications/ChatGPT.app/Contents/Resources/codex"; do
+    "$HOME/.local/bin/codex"; do
     if [ -x "$candidate" ]; then
       printf '%s\n' "$candidate"
       return 0
@@ -140,8 +139,10 @@ for slug in required:
         (item for item in models if isinstance(item, dict) and item.get("slug") == slug),
         None,
     )
-    if entry is None or not entry.get("multi_agent_version") or not entry.get("tool_mode"):
-        raise SystemExit(1)
+    if entry is None:
+        raise SystemExit(f"X Codex CLI native model catalog is missing {slug}.")
+    if not entry.get("multi_agent_version") or not entry.get("tool_mode"):
+        raise SystemExit(f"X {slug} native collaboration/tool metadata is unavailable.")
 PY
   then
     compatible=0
@@ -152,7 +153,7 @@ PY
   return "$compatible"
 }
 
-if [ -n "$CODEX_BIN" ] && codex_has_required_native_capabilities "$CODEX_BIN"; then
+if [ -n "$CODEX_BIN" ] && codex_has_required_native_capabilities "$CODEX_BIN" 2>/dev/null; then
   echo "Existing compatible Codex detected; skipping installation."
 else
   if [ -n "$CODEX_BIN" ]; then
@@ -161,7 +162,7 @@ else
     echo "Codex CLI was not found; installing it ..."
   fi
   tmp_installer="$(mktemp)"
-  if curl -fsSL https://chatgpt.com/codex/install.sh -o "$tmp_installer" && CODEX_NON_INTERACTIVE=1 sh "$tmp_installer"; then
+  if curl -fsSL https://chatgpt.com/codex/install.sh -o "$tmp_installer" && env -u OPENAI_API_KEY -u ANYROUTERS_KEY -u KEY -u ORIGINAL_KEY -u CODEX_API_KEY CODEX_NON_INTERACTIVE=1 sh "$tmp_installer"; then
     :
   else
     echo "Official installer failed. Trying npm ..."
@@ -173,14 +174,24 @@ else
         fail "Node.js is required. Install it from https://nodejs.org then re-run."
       fi
     fi
-    npm install -g @openai/codex
+    env -u OPENAI_API_KEY -u ANYROUTERS_KEY -u KEY -u ORIGINAL_KEY -u CODEX_API_KEY npm install -g @openai/codex
   fi
   rm -f "$tmp_installer"
   tmp_installer=""
   hash -r 2>/dev/null || true
   CODEX_BIN="$(resolve_codex_binary || true)"
+  # The official installer may place a new CLI before the old PATH entry.
+  # Respect explicit overrides; otherwise use the newly installed compatible CLI.
+  if [ -z "${ANYROUTERS_CODEX_BIN:-}" ] && [ -x "$HOME/.local/bin/codex" ] &&
+     codex_has_required_native_capabilities "$HOME/.local/bin/codex"; then
+    CODEX_BIN="$HOME/.local/bin/codex"
+  fi
   [ -n "$CODEX_BIN" ] || fail "Codex was installed or upgraded but its executable is not available yet. Open a new terminal and re-run this command."
 fi
+
+# An installer exit code alone is not evidence that the selected CLI upgraded.
+codex_has_required_native_capabilities "$CODEX_BIN" \
+  || fail "Codex CLI is still incompatible after one upgrade attempt; existing configuration was not changed."
 
 cleanup_codex_profile() {
   profile="$1"

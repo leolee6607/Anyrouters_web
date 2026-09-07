@@ -12,7 +12,7 @@ const historyScript = readFileSync(
 
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
-  expect(source).toContain('Codex GPT-6 setup updated: September 5, 2026')
+  expect(source).toContain('Codex GPT-6 setup updated: September 7, 2026')
   expect(source).toContain('Connect with gpt-6-astra; GPT-5.6 remains available through /model.')
   expect(source).toContain('ANYROUTERS_MODEL=gpt-6-astra')
   expect(source).toContain('$env:ANYROUTERS_MODEL="gpt-6-astra"')
@@ -32,6 +32,12 @@ test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('已有兼容版本会自动跳过安装')
   expect(source).toContain('已经安装 Codex 的用户无需卸载或重装')
   expect(source).toContain("<strong className='font-semibold'>")
+})
+
+test('Mac setup upgrades the CLI rather than replacing the desktop app', () => {
+  expect(source).toContain('setup checks Codex CLI compatibility')
+  expect(source).toContain('It does not reinstall the desktop app.')
+  expect(source).toContain('a compatible CLI is kept unchanged')
 })
 
 test('one-line setup explains its scope below the command', () => {

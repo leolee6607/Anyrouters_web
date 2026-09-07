@@ -8,6 +8,7 @@ CODEX_DIR="$HOME/.codex"
 CONFIG="$CODEX_DIR/config.toml"
 LEGACY_CATALOG="$CODEX_DIR/model-catalog-anyrouters-gpt56.json"
 work_dir=""
+tmp_installer=""
 lock_dir=""
 CONFLICTING_CODEX_ENV_NAMES="
 OPENAI_API_KEY
@@ -36,6 +37,9 @@ fail() {
 
 cleanup() {
   unset KEY ORIGINAL_KEY 2>/dev/null || true
+  if [ -n "${tmp_installer:-}" ] && [ -f "$tmp_installer" ]; then
+    rm -f "$tmp_installer"
+  fi
   if [ -n "${work_dir:-}" ] && [ -d "$work_dir" ]; then
     rm -rf "$work_dir"
   fi
@@ -82,29 +86,128 @@ for name in $CONFLICTING_CODEX_ENV_NAMES; do
 done
 export OPENAI_API_KEY="$KEY"
 
+command -v python3 >/dev/null 2>&1 || fail "Python 3 is required to migrate the Codex configuration safely."
+
 resolve_codex_binary() {
   if [ -n "${ANYROUTERS_CODEX_BIN:-}" ] && [ -x "$ANYROUTERS_CODEX_BIN" ]; then
     printf '%s\n' "$ANYROUTERS_CODEX_BIN"
     return 0
   fi
+  if command -v codex >/dev/null 2>&1; then
+    command -v codex
+    return 0
+  fi
   for candidate in \
-    "/Applications/ChatGPT.app/Contents/Resources/codex" \
-    "$HOME/Applications/ChatGPT.app/Contents/Resources/codex"; do
+    "$HOME/.local/bin/codex"; do
     if [ -x "$candidate" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi
   done
-  if command -v codex >/dev/null 2>&1; then
-    command -v codex
-    return 0
-  fi
   return 1
 }
 
 CODEX_BIN="$(resolve_codex_binary || true)"
-[ -n "$CODEX_BIN" ] || fail "Could not find Codex. Install or upgrade the desktop app (or Codex CLI), then re-run this command."
-command -v python3 >/dev/null 2>&1 || fail "Python 3 is required to migrate the Codex configuration safely."
+
+codex_has_required_native_capabilities() {
+  candidate="$1"
+  probe_dir="$(mktemp -d)"
+  probe_catalog="$probe_dir/models.json"
+  if ! CODEX_HOME="$probe_dir" CODEX_NON_INTERACTIVE=1 "$candidate" debug models > "$probe_catalog" 2>/dev/null; then
+    rm -rf "$probe_dir"
+    return 1
+  fi
+  if python3 - "$probe_catalog" "$MODEL" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        payload = json.load(handle)
+except (OSError, ValueError):
+    raise SystemExit(1)
+
+models = payload.get("models") if isinstance(payload, dict) else payload
+if not isinstance(models, list):
+    raise SystemExit(1)
+
+required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+if sys.argv[2] == "gpt-6-astra":
+    required += (sys.argv[2],)
+for slug in required:
+    entry = next(
+        (item for item in models if isinstance(item, dict) and item.get("slug") == slug),
+        None,
+    )
+    if entry is None:
+        raise SystemExit(f"X Codex CLI native model catalog is missing {slug}.")
+    if not entry.get("multi_agent_version") or not entry.get("tool_mode"):
+        raise SystemExit(f"X {slug} native collaboration/tool metadata is unavailable.")
+PY
+  then
+    compatible=0
+  else
+    compatible=1
+  fi
+  rm -rf "$probe_dir"
+  return "$compatible"
+}
+
+if [ -n "$CODEX_BIN" ] && codex_has_required_native_capabilities "$CODEX_BIN" 2>/dev/null; then
+  echo "Existing compatible Codex detected; skipping installation."
+else
+  if [ -n "$CODEX_BIN" ]; then
+    echo "Existing Codex lacks the required native GPT-5.6 capabilities or selected model $MODEL; upgrading it ..."
+  else
+    echo "Codex CLI was not found; installing it ..."
+  fi
+  tmp_installer="$(mktemp)"
+  if curl -fsSL https://chatgpt.com/codex/install.sh -o "$tmp_installer" && env -u OPENAI_API_KEY -u ANYROUTERS_KEY -u KEY -u ORIGINAL_KEY -u CODEX_API_KEY CODEX_NON_INTERACTIVE=1 sh "$tmp_installer"; then
+    :
+  else
+    echo "Official installer failed. Trying npm ..."
+    if ! command -v node >/dev/null 2>&1; then
+      if command -v brew >/dev/null 2>&1; then
+        echo "Installing Node.js via Homebrew ..."
+        brew install node
+      else
+        fail "Node.js is required. Install it from https://nodejs.org then re-run."
+      fi
+    fi
+    env -u OPENAI_API_KEY -u ANYROUTERS_KEY -u KEY -u ORIGINAL_KEY -u CODEX_API_KEY npm install -g @openai/codex
+  fi
+  rm -f "$tmp_installer"
+  tmp_installer=""
+  hash -r 2>/dev/null || true
+  CODEX_BIN="$(resolve_codex_binary || true)"
+  # The official installer may place a new CLI before the old PATH entry.
+  # Respect explicit overrides; otherwise use the newly installed compatible CLI.
+  if [ -z "${ANYROUTERS_CODEX_BIN:-}" ] && [ -x "$HOME/.local/bin/codex" ] &&
+     codex_has_required_native_capabilities "$HOME/.local/bin/codex"; then
+    CODEX_BIN="$HOME/.local/bin/codex"
+  fi
+  [ -n "$CODEX_BIN" ] || fail "Codex was installed or upgraded but its executable is not available yet. Open a new terminal and re-run this command."
+fi
+
+# An installer exit code alone is not evidence that the selected CLI upgraded.
+codex_has_required_native_capabilities "$CODEX_BIN" \
+  || fail "Codex CLI is still incompatible after one upgrade attempt; existing configuration was not changed."
+
+# CLI and desktop share configuration, not bundled runtime versions.
+# Never replace a desktop application as part of a CLI upgrade.
+if [ -z "${ANYROUTERS_CODEX_BIN:-}" ]; then
+  for desktop_cli in \
+    "/Applications/ChatGPT.app/Contents/Resources/codex" \
+    "$HOME/Applications/ChatGPT.app/Contents/Resources/codex" \
+    "/Applications/Codex.app/Contents/Resources/codex" \
+    "$HOME/Applications/Codex.app/Contents/Resources/codex"; do
+    if [ -x "$desktop_cli" ]; then
+      codex_has_required_native_capabilities "$desktop_cli" \
+        || fail "CLI is ready, but the desktop runtime is incompatible. Update the official desktop app manually; existing configuration was not changed."
+      break
+    fi
+  done
+fi
 
 cleanup_codex_profile() {
   profile="$1"

@@ -1,5 +1,8 @@
 {
   "translation": {
+    "Codex GPT-6 setup updated: September 7, 2026": "Настройка Codex GPT-6 обновлена: 7 сентября 2026 г.",
+    "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "На macOS скрипт проверяет совместимость Codex CLI, устанавливает или обновляет его только при необходимости, затем сохраняет резервную копию и записывает общие настройки. Настольное приложение не переустанавливается.",
+    "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "Команда проверяет или обновляет Codex CLI перед записью общих настроек AnyRouters; совместимый CLI остаётся без изменений",
     "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "Для ключа Codex с ограничением моделей также нужно разрешить соответствующую модель -openai-compact. В Codex оставьте исходное имя модели. При ошибке сжатия 403/503 обратитесь в поддержку; не снимайте все ограничения моделей.",
     "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "Если Code Mode недоступен, восстановите полную официальную установку Codex. Успешный ответ ещё не означает, что инструменты работают.",
     "Codex GPT-6 setup updated: September 5, 2026": "Настройка Codex GPT-6 обновлена: 5 сентября 2026 г.",

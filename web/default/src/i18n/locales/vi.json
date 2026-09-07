@@ -1,5 +1,8 @@
 {
   "translation": {
+    "Codex GPT-6 setup updated: September 7, 2026": "Cập nhật kết nối Codex GPT-6: ngày 7 tháng 9 năm 2026",
+    "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Trên Mac, tập lệnh kiểm tra khả năng tương thích của Codex CLI, chỉ cài hoặc nâng cấp khi cần, rồi sao lưu và ghi cấu hình dùng chung. Không cài lại ứng dụng máy tính.",
+    "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "Lệnh này kiểm tra hoặc nâng cấp Codex CLI trước khi ghi cấu hình AnyRouters dùng chung; CLI tương thích được giữ nguyên",
     "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "Key Codex có giới hạn mô hình cũng cần quyền cho mô hình -openai-compact tương ứng. Trong Codex vẫn dùng tên mô hình gốc. Nếu nén gặp lỗi 403/503, hãy liên hệ hỗ trợ; không bỏ toàn bộ giới hạn mô hình.",
     "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "Nếu Code Mode không khả dụng, hãy sửa bản cài đặt Codex chính thức đầy đủ. Trả lời thành công chưa chứng minh công cụ có thể chạy.",
     "Codex GPT-6 setup updated: September 5, 2026": "Cập nhật kết nối Codex GPT-6: ngày 5 tháng 9 năm 2026",

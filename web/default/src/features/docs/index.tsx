@@ -265,7 +265,7 @@ function CodexUpdateNotice() {
   return (
     <div className='rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100'>
       <p className='font-semibold'>
-        {t('Codex GPT-6 setup updated: September 5, 2026')}
+        {t('Codex GPT-6 setup updated: September 7, 2026')}
       </p>
       <ol className='mt-1 list-decimal pl-5'>
         <li>
@@ -280,7 +280,7 @@ function CodexUpdateNotice() {
       <div className='mt-3 space-y-2'>
         <p>
           {t(
-            'The script checks native GPT-6 tool metadata. Update the CLI when incompatible; update the desktop app separately.'
+            'On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.'
           )}
         </p>
         <p>
@@ -364,10 +364,17 @@ function ApiTakeoverNotice({
 }: {
   tool: 'codex' | 'codex-config' | 'claude'
 }) {
+  const { t } = useTranslation()
+  const { os } = useOsChoice()
   const toolName = tool === 'claude' ? 'Claude Code' : 'Codex'
   let action = `这条命令会安装或升级 ${toolName}，并写入 AnyRouters 配置`
   if (tool === 'codex-config') {
-    action = `这条命令只更新 ${toolName} 的 AnyRouters 配置`
+    action =
+      os === 'mac'
+        ? t(
+            'This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged'
+          )
+        : `这条命令只更新 ${toolName} 的 AnyRouters 配置`
   } else if (tool === 'codex') {
     action =
       '这条命令会先检测现有 Codex；能力兼容时跳过安装并只更新 AnyRouters 配置，未安装或能力不足时才安装或升级'

@@ -1,5 +1,8 @@
 {
   "translation": {
+    "Codex GPT-6 setup updated: September 7, 2026": "Codex GPT-6 接入更新：2026年9月7日",
+    "On macOS, setup checks Codex CLI compatibility, installs or upgrades it only when needed, then backs up and writes the shared configuration. It does not reinstall the desktop app.": "Mac 脚本会检查 Codex CLI 的兼容性，仅在未安装或不兼容时安装、升级，再备份并写入共享配置；不会重装桌面应用。",
+    "This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged": "这条命令会先检查或升级 Codex CLI，再写入 AnyRouters 共享配置；已经兼容的 CLI 保持不动",
     "A model-restricted Codex Key also needs the matching -openai-compact permission. Keep using the base model name in Codex. For compact 403/503 errors, contact support; do not remove all model restrictions.": "如果 Codex 用的 Key 设置了模型限制，还需要授权对应的 -openai-compact 压缩模型；Codex 中仍填写原模型名。压缩时报 403/503 请联系支持，不要直接取消所有模型限制。",
     "If Code Mode is unavailable, repair the complete official Codex installation. A successful reply alone does not prove tools can run.": "如果提示 Code Mode 不可用，请修复完整的官方 Codex 安装。能正常回复，不代表工具已经可以执行。",
     "Codex GPT-6 setup updated: September 5, 2026": "Codex GPT-6 接入更新：2026年9月5日",
