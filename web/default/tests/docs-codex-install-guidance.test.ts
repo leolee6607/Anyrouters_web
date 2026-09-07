@@ -1,5 +1,9 @@
 import { expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { codexMacResetCommand } from '../src/features/docs/codex-mac-reset'
 
 const source = readFileSync(
   new URL('../src/features/docs/index.tsx', import.meta.url),
@@ -9,6 +13,48 @@ const historyScript = readFileSync(
   new URL('../../../router/install_scripts/codex-history.ps1', import.meta.url),
   'utf8'
 )
+
+test.skipIf(process.platform === 'win32')('Mac manual reset backs up changed config and preserves history before official login', () => {
+  const home = mkdtempSync(join(tmpdir(), 'an-reset-test-'))
+  try {
+    const cfg = join(home, '.codex')
+    const an = join(home, 'Library/Application Support/AnyRouters-Shared-Setup')
+    const bin = join(home, 'bin')
+    for (const dir of [cfg, an, bin]) mkdirSync(dir, { recursive: true })
+    const changed = 'model_provider="an_shared_mac"\n# settings changed after setup\n'
+    writeFileSync(join(cfg, 'config.toml'), changed)
+    writeFileSync(join(cfg, 'auth.json'), 'fake-original-auth')
+    writeFileSync(join(cfg, 'history.jsonl'), 'keep-history')
+    writeFileSync(join(an, 'active.json'), 'fake-old-record')
+    writeFileSync(join(an, 'an-key'), 'fake-test-key')
+    writeFileSync(join(bin, 'codex'), '#!/bin/sh\nset -eu\ntest -z "${OPENAI_API_KEY:-}${CODEX_API_KEY:-}${CODEX_ACCESS_TOKEN:-}${OPENAI_BASE_URL:-}${CODEX_HOME:-}"\ntest ! -e "$HOME/.codex/config.toml"\nprintf "%s\\n" "$1" >> "$HOME/calls"\n')
+    chmodSync(join(bin, 'codex'), 0o700)
+    const result = spawnSync('/bin/bash', ['-c', codexMacResetCommand], {
+      env: { HOME: home, PATH: `${bin}:/usr/bin:/bin`, OPENAI_API_KEY: 'fake-key', CODEX_HOME: '/must-not-use' },
+      encoding: 'utf8',
+    })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(home, 'calls'), 'utf8')).toBe('logout\nlogin\n')
+    expect(readFileSync(join(cfg, 'history.jsonl'), 'utf8')).toBe('keep-history')
+    expect(existsSync(join(an, 'active.json'))).toBe(false)
+    expect(existsSync(join(an, 'an-key'))).toBe(false)
+    const backup = join(cfg, readdirSync(cfg).find(name => name.startsWith('an-reset-backup.'))!)
+    expect(readFileSync(join(backup, 'config.toml'), 'utf8')).toBe(changed)
+    expect(readFileSync(join(backup, 'auth.json'), 'utf8')).toBe('fake-original-auth')
+    expect(readFileSync(join(backup, 'an-key'), 'utf8')).toBe('fake-test-key')
+    expect(result.stdout).not.toContain('fake-test-key')
+  } finally {
+    rmSync(home, { recursive: true, force: true })
+  }
+})
+
+test('Mac reset is an optional final fallback, distinct from the website official switch', () => {
+  expect(source).toContain("{os === 'mac' && (")
+  expect(source).toContain('<CodeBlock code={codexMacResetCommand} />')
+  expect(source).toContain('Website installations should use the official-switch command above first')
+  expect(source).toContain('Current model, MCP and permission settings are backed up but no longer loaded.')
+  expect(codexMacResetCommand).not.toContain('rm -rf')
+})
 
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
