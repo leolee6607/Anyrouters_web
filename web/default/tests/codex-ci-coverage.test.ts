@@ -26,6 +26,7 @@ test('Windows CI selects every executable PowerShell regression, including GPT-6
 })
 
 test('Windows CI covers Windows PowerShell 5.1 and PowerShell 7', () => {
+  expect(workflow).toContain('tests/codex-windows-discovery.test.ts')
   expect(workflow).toContain('powershell.exe')
   expect(workflow).toContain('pwsh.exe')
   expect(workflow).toContain('matrix.powershell')

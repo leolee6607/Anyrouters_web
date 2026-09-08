@@ -350,15 +350,17 @@ function ApiTakeoverNotice({
   const toolName = tool === 'claude' ? 'Claude Code' : 'Codex'
   let action = `这条命令会安装或升级 ${toolName}，并写入 AnyRouters 配置`
   if (tool === 'codex-config') {
-    action =
-      os === 'mac'
-        ? t(
-            'This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged'
-          )
-        : `这条命令只更新 ${toolName} 的 AnyRouters 配置`
+    action = t(
+      'This command checks or upgrades Codex CLI before writing shared AnyRouters configuration; a compatible CLI is kept unchanged'
+    )
   } else if (tool === 'codex') {
     action = t(
       'Setup checks Codex CLI, completes any required installation or update, then configures AnyRouters. Existing versions that meet the requirements are retained.'
+    )
+  }
+  if (os === 'windows' && tool !== 'claude') {
+    action = t(
+      'Setup checks Codex CLI and asks before installing or updating it. Declining leaves your configuration unchanged; a compatible CLI needs no update.'
     )
   }
   const safety =

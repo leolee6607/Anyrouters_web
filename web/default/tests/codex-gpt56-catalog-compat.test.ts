@@ -202,6 +202,8 @@ function isolatedPowerShellFixture(
   options: {
     npmShimStderrWarning?: boolean
     homeName?: string
+    upgrade?: 'effective' | 'ineffective'
+    updateAnswer?: string
   } = {}
 ) {
   const root = mkdtempSync(join(tmpdir(), 'anyrouters-codex-native-pwsh-'))
@@ -221,6 +223,9 @@ function isolatedPowerShellFixture(
   const fixturePath = join(root, 'catalog.json')
   const codexLog = join(root, 'codex.log')
   const statePath = join(root, 'state.txt')
+  const upgradedFixturePath = join(root, 'upgraded-catalog.json')
+  const installerLog = join(root, 'installer.log')
+  writeFileSync(upgradedFixturePath, JSON.stringify({ models: [...fixture().models, { slug: 'gpt-6-astra', multi_agent_version: 'v2', tool_mode: 'code_mode_only' }] }))
   const wrapperPath = join(root, 'wrapper.ps1')
   writeFileSync(fixturePath, JSON.stringify(fixture()))
 
@@ -287,6 +292,10 @@ exit 2
   writeFileSync(
     wrapperPath,
     `param([string]$ScriptPath, [string]$StatePath)
+function Read-Host { param([string]$Prompt); Add-Content -Path $env:PROMPT_LOG -Value $Prompt; return $env:UPDATE_ANSWER }
+if ($env:DESKTOP_SCAN_MUST_NOT_RUN -eq '1') {
+  function Get-AppxPackage { throw 'Unexpected desktop installation scan during shared config write' }
+}
 function Invoke-RestMethod {
   param(
     [string]$Method,
@@ -296,7 +305,7 @@ function Invoke-RestMethod {
     [string]$ErrorAction
   )
   if ($Uri -like '*chatgpt.com/codex/install.ps1') {
-    return '$global:AnyRoutersInstallerStubRan = $true'
+    return 'if ($env:ANYROUTERS_KEY -or $env:OPENAI_API_KEY -or $env:CODEX_API_KEY) { throw "Credential leaked to installer" }; Add-Content -Path $env:INSTALLER_LOG -Value "install"; if ($env:UPGRADE_BEHAVIOR -eq "effective") { Copy-Item $env:UPGRADED_CATALOG $env:CATALOG_FIXTURE -Force }'
   }
   return [pscustomobject]@{}
 }
@@ -349,6 +358,11 @@ name = "Replace Me"
     OPENAI_API_KEY: 'old-env-key',
     OPENAI_BASE_URL: 'https://old-relay.invalid/v1',
     CODEX_API_KEY: 'old-codex-key',
+    UPGRADE_BEHAVIOR: options.upgrade ?? 'ineffective',
+    UPGRADED_CATALOG: upgradedFixturePath,
+    INSTALLER_LOG: installerLog,
+    UPDATE_ANSWER: options.updateAnswer ?? 'Y',
+    PROMPT_LOG: join(root, 'prompt.log'),
   }
 
   return {
@@ -357,6 +371,7 @@ name = "Replace Me"
     codexLog,
     powerShellProfile,
     statePath,
+    installerLog,
     env,
     run(script: 'codex.ps1' | 'codex-config.ps1' | 'codex-official.ps1') {
       return spawnSync(
@@ -773,6 +788,55 @@ export HTTPS_PROXY="http://keep-proxy.invalid"
 }
 
 const powerShellTest = pwshBin ? test : test.skip
+for (const answer of ['N', '', 'yes please']) {
+  powerShellTest(`PowerShell declines CLI update for answer ${JSON.stringify(answer)} without changing config`, () => {
+    const run = isolatedPowerShellFixture({ upgrade: 'effective', updateAnswer: answer })
+    Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+    const before = readFileSync(join(run.codexDir, 'config.toml'), 'utf8')
+    const result = run.run('codex-config.ps1')
+    expect(result.status).not.toBe(0)
+    expect(existsSync(run.installerLog)).toBe(false)
+    expect(readFileSync(join(run.codexDir, 'config.toml'), 'utf8')).toBe(before)
+    expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+  }, 30_000)
+}
+powerShellTest('PowerShell compatible CLI never asks to install or update', () => {
+  const run = isolatedPowerShellFixture({ updateAnswer: 'N' })
+  const result = run.run('codex-config.ps1')
+  expect(result.status, result.stdout + result.stderr).toBe(0)
+  expect(existsSync(run.env.PROMPT_LOG)).toBe(false)
+  expect(existsSync(run.installerLog)).toBe(false)
+}, 30_000)
+powerShellTest('PowerShell shared config write does not require a desktop installation scan', () => {
+  const run = isolatedPowerShellFixture({ upgrade: 'effective' })
+  Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra', DESKTOP_SCAN_MUST_NOT_RUN: '1' })
+  const result = run.run('codex-config.ps1')
+  expect(result.status, result.stdout + result.stderr).toBe(0)
+  expect(readFileSync(join(run.codexDir, 'config.toml'), 'utf8')).toContain('model = "gpt-6-astra"')
+  expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+}, 30_000)
+
+powerShellTest('PowerShell desktop setup upgrades missing GPT-6 before writing configuration', () => {
+  const run = isolatedPowerShellFixture({ upgrade: 'effective' })
+  Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+  const result = run.run('codex-config.ps1')
+  expect(result.status, result.stdout + result.stderr).toBe(0)
+  expect(readFileSync(run.installerLog, 'utf8').trim()).toBe('install')
+  expect(readFileSync(join(run.codexDir, 'config.toml'), 'utf8')).toContain('model = "gpt-6-astra"')
+  expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+}, 30_000)
+
+powerShellTest('PowerShell desktop setup stops after one ineffective upgrade without changing config', () => {
+  const run = isolatedPowerShellFixture({ upgrade: 'ineffective' })
+  Object.assign(run.env, { ANYROUTERS_MODEL: 'gpt-6-astra' })
+  const old = readFileSync(join(run.codexDir, 'config.toml'), 'utf8')
+  const result = run.run('codex-config.ps1')
+  expect(result.status).not.toBe(0)
+  expect(readFileSync(run.installerLog, 'utf8').trim()).toBe('install')
+  expect(readFileSync(join(run.codexDir, 'config.toml'), 'utf8')).toBe(old)
+  expect(readFileSync(join(run.codexDir, 'auth.json'), 'utf8')).toBe('desktop-login')
+}, 30_000)
+
 for (const script of ['codex.ps1', 'codex-config.ps1'] as const) {
   powerShellTest(`PowerShell ${script} checks GPT-6 metadata and preserves incompatible settings`, () => {
     const run = isolatedPowerShellFixture()

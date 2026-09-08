@@ -1,5 +1,6 @@
 {
   "translation": {
+    "Setup checks Codex CLI and asks before installing or updating it. Declining leaves your configuration unchanged; a compatible CLI needs no update.": "Setup checks Codex CLI and asks before installing or updating it. Declining leaves your configuration unchanged; a compatible CLI needs no update.",
     "Switch models and adjust reasoning effort in Codex.": "Switch models and adjust reasoning effort in Codex.",
     "After setup, reopen Codex and start a new conversation. Contact support if you need help.": "After setup, reopen Codex and start a new conversation. Contact support if you need help.",
     "API usage is charged to your AnyRouters balance. ChatGPT subscription benefits are not included.": "API usage is charged to your AnyRouters balance. ChatGPT subscription benefits are not included.",

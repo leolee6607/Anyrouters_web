@@ -82,7 +82,10 @@ function Invoke-CodexCaptured([string]$CodexExe, [string]$Arguments) {
     }
     $stdoutTask = $process.StandardOutput.ReadToEndAsync()
     $stderrTask = $process.StandardError.ReadToEndAsync()
-    $process.WaitForExit()
+    if (-not $process.WaitForExit(30000)) {
+      try { $process.Kill() } catch {}
+      throw "Codex capability check timed out."
+    }
     return [pscustomobject]@{
       ExitCode = $process.ExitCode
       Stdout = $stdoutTask.Result
@@ -201,58 +204,220 @@ function Get-JsonField($Object, [string]$Name) {
   return $null
 }
 
+function Get-CodexCliCandidates {
+  if ($env:ANYROUTERS_CODEX_BIN) {
+    if (-not (Test-Path -LiteralPath $env:ANYROUTERS_CODEX_BIN -PathType Leaf)) {
+      throw "X ANYROUTERS_CODEX_BIN does not point to an existing executable."
+    }
+    return @($env:ANYROUTERS_CODEX_BIN)
+  }
+  $paths = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($command in @(Get-Command codex -All -ErrorAction SilentlyContinue)) {
+    if ($command.CommandType -in @("Application", "ExternalScript") -and $command.Source) {
+      $paths.Add($command.Source)
+    }
+  }
+  foreach ($root in @("$HOME\.local\bin", "$HOME\.codex\bin")) {
+    foreach ($name in @("codex.exe", "codex.cmd")) {
+      $path = Join-Path $root $name
+      if (Test-Path -LiteralPath $path -PathType Leaf) { $paths.Add($path) }
+    }
+  }
+  # Only the standalone CLI directory, never the broad OpenAI application tree.
+  if ($env:LOCALAPPDATA) {
+    $root = Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin"
+    if (Test-Path -LiteralPath $root) {
+      foreach ($file in @(Get-ChildItem -LiteralPath $root -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending)) {
+        $paths.Add($file.FullName)
+      }
+    }
+  }
+  return @($paths | Select-Object -Unique)
+}
+
 function Resolve-CodexExecutable([bool]$PreferDesktop) {
-  if ($env:ANYROUTERS_CODEX_BIN -and (Test-Path $env:ANYROUTERS_CODEX_BIN)) {
-    return $env:ANYROUTERS_CODEX_BIN
+  # CLI and desktop runtime selection are deliberately separate.
+  $candidates = @(Get-CodexCliCandidates)
+  foreach ($candidate in $candidates) {
+    if (Test-CodexNativeCompatibility $candidate) { return $candidate }
   }
-  $desktopRoots = @(
-    "$env:LOCALAPPDATA\Programs\ChatGPT",
-    "$env:LOCALAPPDATA\OpenAI",
-    "$env:ProgramFiles\ChatGPT",
-    "$env:ProgramFiles\OpenAI"
-  ) | Where-Object { $_ -and (Test-Path $_) }
-  try {
-    $desktopRoots += Get-AppxPackage -Name "*ChatGPT*" -ErrorAction SilentlyContinue |
-      ForEach-Object { $_.InstallLocation } |
-      Where-Object { $_ -and (Test-Path $_) }
-  } catch {}
-
-  if ($PreferDesktop) {
-    foreach ($root in $desktopRoots) {
-      $match = Get-ChildItem -Path $root -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-      if ($match) { return $match.FullName }
-    }
-  }
-
-  $nativeCommand = Get-Command codex.exe -CommandType Application -ErrorAction SilentlyContinue
-  if ($nativeCommand) { return $nativeCommand.Source }
-  $command = Get-Command codex -ErrorAction SilentlyContinue
-  if ($command) {
-    if ([System.IO.Path]::GetExtension($command.Source) -eq ".exe") { return $command.Source }
-    $commandRoot = Split-Path $command.Source -Parent
-    $nativeRoots = @(
-      (Join-Path $commandRoot "node_modules\@openai\codex"),
-      (Join-Path $env:APPDATA "npm\node_modules\@openai\codex")
-    ) | Where-Object { $_ -and (Test-Path $_) }
-    foreach ($nativeRoot in $nativeRoots) {
-      $native = Get-ChildItem -Path $nativeRoot -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-      if ($native) { return $native.FullName }
-    }
-    return $command.Source
-  }
-  $localCodex = "$HOME\.local\bin\codex.exe"
-  if (Test-Path $localCodex) { return $localCodex }
-
-  if (-not $PreferDesktop) {
-    foreach ($root in $desktopRoots) {
-      $match = Get-ChildItem -Path $root -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-      if ($match) { return $match.FullName }
-    }
-  }
+  if ($candidates.Count -gt 0) { return $candidates[0] }
   return $null
+}
+
+function Assert-CodexDesktopRuntime {
+  # Never set CODEX_CLI_PATH to hide an incomplete desktop installation.
+  $roots = New-Object 'System.Collections.Generic.List[string]'
+  if (Get-Command Get-AppxPackage -ErrorAction SilentlyContinue) {
+    foreach ($name in @("OpenAI.Codex", "*ChatGPT*")) {
+      foreach ($package in @(Get-AppxPackage -Name $name -ErrorAction SilentlyContinue)) {
+        if ($package.InstallLocation -and (Test-Path -LiteralPath $package.InstallLocation)) {
+          $roots.Add($package.InstallLocation)
+        }
+      }
+    }
+  }
+  foreach ($root in @("$env:LOCALAPPDATA\Programs\ChatGPT", "$env:ProgramFiles\ChatGPT")) {
+    if ((Test-Path -LiteralPath (Join-Path $root "ChatGPT.exe")) -or (Test-Path -LiteralPath (Join-Path $root "Codex.exe"))) {
+      $roots.Add($root)
+    }
+  }
+  if ($roots.Count -eq 0) {
+    Write-Host "Desktop installation was not detected. CLI configuration does not verify desktop startup."
+    return
+  }
+  foreach ($root in @($roots | Select-Object -Unique)) {
+    $runtimes = @()
+    foreach ($resourceRoot in @((Join-Path $root "resources"), (Join-Path $root "app\resources"))) {
+      if (Test-Path -LiteralPath $resourceRoot) {
+        $runtimes += @(Get-ChildItem -LiteralPath $resourceRoot -Filter "codex.exe" -File -Recurse -ErrorAction SilentlyContinue)
+      }
+    }
+    if ($runtimes.Count -eq 0) {
+      throw "X Installed Codex desktop is missing its bundled CLI. Update or repair the official desktop app, then retry. Existing configuration was not changed."
+    }
+    # Do not use an unrelated CLI as proof that this desktop runtime is compatible.
+    $compatible = $false
+    foreach ($runtime in $runtimes) {
+      if (Test-CodexNativeCompatibility $runtime.FullName) { $compatible = $true; break }
+    }
+    if (-not $compatible) {
+      throw "X Installed Codex desktop runtime does not support the selected model. Update the official desktop app, then retry. Existing configuration was not changed."
+    }
+  }
+}
+
+function Update-CodexCli([string]$CurrentExe) {
+  $work = Join-Path ([System.IO.Path]::GetTempPath()) ("anyrouters-cli-update-" + [guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Path $work | Out-Null
+  try {
+    # Retain the installation channel for npm shims so a second install cannot
+    # leave the old npm command at the front of PATH.
+    $npmRoot = if ($env:APPDATA) { Join-Path $env:APPDATA "npm" } else { "" }
+    $useNpm = $CurrentExe -and $npmRoot -and $CurrentExe.StartsWith($npmRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    $installerPath = Join-Path $work "install.ps1"
+    if ($useNpm) {
+      if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
+        throw "X npm.cmd was not found. Repair the Node.js installation and retry."
+      }
+      Write-Utf8NoBom $installerPath 'npm.cmd install -g @openai/codex; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }'
+    } else {
+      $installer = Invoke-RestMethod -Uri "https://chatgpt.com/codex/install.ps1" -ErrorAction Stop
+      Write-Utf8NoBom $installerPath $installer
+    }
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = New-CodexProcessStartInfo $installerPath ""
+    foreach ($name in @($process.StartInfo.EnvironmentVariables.Keys)) {
+      if ($name -match '(?i)(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)' -or $name -match '^(?i:OPENAI_|CODEX_HOME$|ANYROUTERS_)') {
+        $process.StartInfo.EnvironmentVariables.Remove($name)
+      }
+    }
+    $process.StartInfo.EnvironmentVariables["CODEX_NON_INTERACTIVE"] = "1"
+    try {
+      [void]$process.Start()
+      $stdout = $process.StandardOutput.ReadToEndAsync()
+      $stderr = $process.StandardError.ReadToEndAsync()
+      if (-not $process.WaitForExit(300000)) {
+        try { $process.Kill() } catch {}
+        throw "X CLI update timed out; existing configuration was not changed."
+      }
+      if ($process.ExitCode -ne 0) { throw "X Official CLI update failed (exit $($process.ExitCode)); existing configuration was not changed." }
+      # Deliberately do not echo installer output: environment/provider credentials
+      # must not appear in a shared support transcript.
+    } finally { $process.Dispose() }
+    if ($env:OS -eq "Windows_NT") {
+      $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+      $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+      $env:Path = @($userPath, $machinePath, $env:Path) -join [System.IO.Path]::PathSeparator
+    }
+  } finally {
+    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+function Ensure-CompatibleCodexCli {
+  $selected = Resolve-CodexExecutable $false
+  if ($selected -and (Test-CodexNativeCompatibility $selected)) {
+    Write-Host "Existing compatible Codex detected; skipping installation."
+    return $selected
+  }
+  Write-Host "Codex CLI is missing or does not meet the requirements for $Model."
+  Write-Host "With your permission, setup will install or update the official Codex CLI."
+  Write-Host "The desktop app will not be reinstalled. Declining keeps the current configuration."
+  try {
+    $answer = Read-Host "Install or update Codex CLI now? [y/N]"
+  } catch {
+    throw "X Interactive confirmation is required. Run in a terminal; existing configuration was not changed."
+  }
+  if (-not $answer -or $answer.Trim() -notin @("y", "yes")) {
+    throw "X CLI installation/update cancelled. Existing configuration was not changed."
+  }
+  Write-Host "Installing or updating Codex CLI for the selected model ..."
+  Update-CodexCli $selected
+  $selected = Resolve-CodexExecutable $false
+  if (-not $selected -or -not (Test-CodexNativeCompatibility $selected)) {
+    throw "X CLI update did not produce a compatible Codex for $Model. Existing configuration was not changed."
+  }
+  return $selected
+}
+
+function Test-CodexNativeCompatibility([string]$CodexExe) {
+  $probeDir = Join-Path ([System.IO.Path]::GetTempPath()) ("anyrouters-codex-probe-" + [guid]::NewGuid().ToString("N"))
+  $hadCodexHome = Test-Path Env:CODEX_HOME
+  $oldCodexHome = $env:CODEX_HOME
+  $hadCodexNonInteractive = Test-Path Env:CODEX_NON_INTERACTIVE
+  $oldCodexNonInteractive = $env:CODEX_NON_INTERACTIVE
+  $oldConflictingCodexEnv = @{}
+  foreach ($name in $ConflictingCodexEnvNames) {
+    $existing = Get-Item "Env:$name" -ErrorAction SilentlyContinue
+    if ($existing) { $oldConflictingCodexEnv[$name] = $existing.Value }
+  }
+
+  try {
+    New-Item -ItemType Directory -Force -Path $probeDir | Out-Null
+    foreach ($name in $ConflictingCodexEnvNames) {
+      [Environment]::SetEnvironmentVariable($name, $null, "Process")
+    }
+    $env:CODEX_HOME = $probeDir
+    $env:CODEX_NON_INTERACTIVE = "1"
+    $catalogResult = Invoke-CodexCaptured $CodexExe "debug models"
+    if ($catalogResult.ExitCode -ne 0 -or -not $catalogResult.Stdout) {
+      return $false
+    }
+    try {
+      $resolvedCatalog = Convert-CodexCatalogJson $catalogResult.Stdout
+    } catch {
+      return $false
+    }
+    $catalogEntries = @($resolvedCatalog.Entries)
+    $wanted = @("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+    if ($Model -eq "gpt-6-astra") { $wanted += $Model }
+    foreach ($slug in $wanted) {
+      $entry = $catalogEntries | Where-Object { (Get-JsonField $_ "slug") -eq $slug } | Select-Object -First 1
+      if (
+        -not $entry -or
+        -not (Get-JsonField $entry "multi_agent_version") -or
+        -not (Get-JsonField $entry "tool_mode")
+      ) {
+        return $false
+      }
+    }
+    return $true
+  } catch {
+    # An unusable stale binary is not proof that all installed CLIs are unusable.
+    return $false
+  } finally {
+    if ($hadCodexHome) { $env:CODEX_HOME = $oldCodexHome } else { Remove-Item Env:CODEX_HOME -ErrorAction SilentlyContinue }
+    if ($hadCodexNonInteractive) { $env:CODEX_NON_INTERACTIVE = $oldCodexNonInteractive } else { Remove-Item Env:CODEX_NON_INTERACTIVE -ErrorAction SilentlyContinue }
+    foreach ($name in $ConflictingCodexEnvNames) {
+      if ($oldConflictingCodexEnv.ContainsKey($name)) {
+        [Environment]::SetEnvironmentVariable($name, $oldConflictingCodexEnv[$name], "Process")
+      } else {
+        [Environment]::SetEnvironmentVariable($name, $null, "Process")
+      }
+    }
+    Remove-Item $probeDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
 }
 
 function Move-AtomicFile([string]$Source, [string]$Destination) {
@@ -551,7 +716,10 @@ try {
 
 $dir = "$HOME\.codex"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
-$codexExe = Resolve-CodexExecutable $true
+$codexExe = Ensure-CompatibleCodexCli
+# Shared configuration is validated with the compatible CLI below. Scanning
+# installed desktop bundles does not identify the app's actual selected runtime.
+# Desktop model/tool availability must be verified in a new task after reopening.
 if (-not $codexExe) {
   throw "X Could not find Codex. Install the desktop app (or Codex CLI), then re-run this command."
 }
