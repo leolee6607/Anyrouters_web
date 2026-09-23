@@ -117,10 +117,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var toolCount int
 	var usage = &dto.Usage{}
 	var lastStreamData string
-	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
-
-	// 检查是否为音频模型
-	isAudioModel := strings.Contains(strings.ToLower(model), "audio")
+	var usageStreamData string
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
 		if lastStreamData != "" {
@@ -130,9 +127,15 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			}
 		}
 		if len(data) > 0 {
-			// 对音频模型，保存倒数第二个stream data
-			if isAudioModel && lastStreamData != "" {
-				secondLastStreamData = lastStreamData
+			// Usage snapshots are cumulative and may precede trailing finish frames.
+			// Retain the latest valid snapshot, including its cache details.
+			var streamUsage struct {
+				Usage *dto.Usage `json:"usage"`
+			}
+			if common.UnmarshalJsonStr(data, &streamUsage) == nil && service.ValidUsage(streamUsage.Usage) {
+				usage = streamUsage.Usage
+				containStreamUsage = true
+				usageStreamData = data
 			}
 
 			lastStreamData = data
@@ -142,24 +145,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			}
 		}
 	})
-
-	// 对音频模型，从倒数第二个stream data中提取usage信息
-	if isAudioModel && secondLastStreamData != "" {
-		var streamResp struct {
-			Usage *dto.Usage `json:"usage"`
-		}
-		err := common.Unmarshal([]byte(secondLastStreamData), &streamResp)
-		if err == nil && streamResp.Usage != nil && service.ValidUsage(streamResp.Usage) {
-			usage = streamResp.Usage
-			containStreamUsage = true
-
-			if common.DebugEnabled {
-				logger.LogDebug(c, "Audio model usage extracted from second last SSE: PromptTokens=%d, CompletionTokens=%d, TotalTokens=%d, InputTokens=%d, OutputTokens=%d",
-					usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens,
-					usage.InputTokens, usage.OutputTokens)
-			}
-		}
-	}
 
 	// 处理最后的响应
 	shouldSendLastResp := true
@@ -179,7 +164,10 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		usage.CompletionTokens += toolCount * 7
 	}
 
-	applyUsagePostProcessing(info, usage, common.StringToByteSlice(lastStreamData))
+	if usageStreamData == "" {
+		usageStreamData = lastStreamData
+	}
+	applyUsagePostProcessing(info, usage, common.StringToByteSlice(usageStreamData))
 
 	HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
 
