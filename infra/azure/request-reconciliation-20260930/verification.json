@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-30",
+  "status": "audit_fix_deployed_historical_reconciliation_open",
+  "revision": "ca-anyrouters-web--audit-errors-20260930",
+  "traffic_percent": 100,
+  "image": "acranyroutersprod.azurecr.io/new-api@sha256:ddcf307081e515e80d01fc89529e98ef011632768f7d7dcf87a7ee3dfb420550",
+  "configuration_change": {
+    "ERROR_LOG_ENABLED": true
+  },
+  "template_diff_only_expected": true,
+  "bicep_compilation": "passed",
+  "candidate_smoke": {
+    "job": "job-anyrouters-api-smoke-5zgp0ta",
+    "upstream_rejection_audited_no_charge": true,
+    "client_abort_audited_no_charge": true,
+    "upstream_ids_captured": true,
+    "normal_input": 8,
+    "normal_output": 5,
+    "normal_quota": 115
+  },
+  "public_smoke": {
+    "job": "job-anyrouters-api-smoke-j73q8wv",
+    "upstream_rejection_audited_no_charge": true,
+    "upstream_id_captured": true,
+    "normal_input": 8,
+    "normal_output": 5,
+    "normal_quota": 115
+  },
+  "public_health": {
+    "api_status": 200,
+    "homepage_browser_user_agent": 200,
+    "default_python_homepage_probe": 403,
+    "note": "Python user-agent returned Cloudflare 403; browser UA and both revision origins returned 200; no edge rule changed"
+  },
+  "historical_billing_changed": false,
+  "pricing_or_discount_changed": false,
+  "support_ticket_sent": false,
+  "support_authorization": "pending",
+  "historical_case": "2607220010000379 closed 2026-08-07",
+  "unresolved": "Request-level attribution of Sep24\u201327 Sol/Astra billed token difference"
+}

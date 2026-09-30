@@ -293,6 +293,12 @@ resource mainApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'DEBUG'
               value: 'false'
             }
+            // Failed upstream attempts can incur provider costs without a consume log.
+            // Keep their request IDs and error metadata for usage reconciliation.
+            {
+              name: 'ERROR_LOG_ENABLED'
+              value: 'true'
+            }
             {
               name: 'STRIPE_MODE'
               value: 'live'
