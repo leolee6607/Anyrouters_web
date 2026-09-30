@@ -36,7 +36,7 @@ Sol 总差输入 547,541、输出 551,298（账单输出的 7.0371%）；Astra �
 - 正常 Responses：HTTP 200，输入 8、输出 5，quota=115；符合现有价格和 default 折扣。
 - 流式主动断开：上游先返回 HTTP 200，客户端 curl 超时，type=5/client_abort/499，保存 Azure request ID，额度未增加。
 
-Bicep 编译通过。候选仅改变环境变量的完整模板比较通过。正式流量和公网回归结果见 verification.json。
+Bicep 编译通过。候选仅改变环境变量的完整模板比较通过。新修订已从 0% 独立验证、1% 小流量升至 100%，正式 API 再次验证上游拒绝留痕和正常计费通过。首页默认 Python UA 返回 Cloudflare 403，浏览器 UA 与新旧修订源站均返回 200，未修改边缘防护。完整结果见 verification.json。
 
 ## 历史工单纠正
 
