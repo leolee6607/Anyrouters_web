@@ -100,7 +100,7 @@ func TestOaiResponsesToChatStreamHandlerEOFDoesNotFakeStop(t *testing.T) {
 	require.True(t, types.IsSkipRetryError(apiErr))
 	require.NotContains(t, recorder.Body.String(), `"finish_reason":"stop"`)
 	require.NotContains(t, recorder.Body.String(), `data: [DONE]`)
-	require.Equal(t, relaycommon.StreamEndReasonDone, info.StreamStatus.EndReason)
+	require.Equal(t, relaycommon.StreamEndReasonEOF, info.StreamStatus.EndReason)
 }
 
 func TestResponsesStreamTerminationErrorClassification(t *testing.T) {
