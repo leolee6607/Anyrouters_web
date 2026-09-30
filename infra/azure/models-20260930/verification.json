@@ -1,0 +1,42 @@
+{
+  "source_commit": "025771f3399e4a9b2ccb012b402e343634c9207d",
+  "build": "ccd",
+  "production_revision": "ca-anyrouters-web--models-025771f33",
+  "traffic_percent": 100,
+  "http_200_cases": 26,
+  "exact_usage_and_charge_cases": 26,
+  "normal_stream_cases": 7,
+  "models": {
+    "gpt-6.1-sol": 4,
+    "gpt-6-sol": 4,
+    "gpt-6-luna": 4,
+    "gemini-3.8-flash": 2,
+    "gpt-5.6-sol": 4,
+    "gpt-5.6-terra": 4,
+    "gpt-5.6-luna": 4
+  },
+  "public_pricing_models_verified": 8,
+  "unrelated_settings_preserved": true,
+  "installers": [
+    {
+      "script": "codex.sh",
+      "sha256": "6c0e1e7ec7788ad8794dea04d7bed55ccda885bbfebb8505c8ec372e18e13fed",
+      "matches_built_source": true
+    },
+    {
+      "script": "codex.ps1",
+      "sha256": "51c663416b486420a1d6ec011ba4589ca13617d2f950e00c987d208d4fd9e88d",
+      "matches_built_source": true
+    },
+    {
+      "script": "codex-config.sh",
+      "sha256": "b3d0b82f96a8e361dfc7a53deac7aab89763003df2fcbed6842628b8a4c05c15",
+      "matches_built_source": true
+    },
+    {
+      "script": "codex-config.ps1",
+      "sha256": "2c84c4b2f00a0cd8cd4fb691068faa64f816e26e27e650828e2930f73acd459e",
+      "matches_built_source": true
+    }
+  ]
+}

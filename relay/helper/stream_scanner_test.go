@@ -709,3 +709,13 @@ func TestStreamScannerHandler_PingInterleavesWithSlowUpstream(t *testing.T) {
 	assert.GreaterOrEqual(t, pingCount, 3,
 		"expected at least 3 pings during 5s stream with 1s ping interval; got %d", pingCount)
 }
+
+func TestProtocolCompletionWinsOverBufferedTransportEOF(t *testing.T) {
+	c, resp, info := setupStreamTest(t, strings.NewReader("data: {\"type\":\"response.completed\"}\n"))
+	StreamScannerHandler(c, resp, info, func(data string, sr *StreamResult) {
+		// Let the reader reach EOF while the terminal protocol frame is buffered.
+		time.Sleep(20 * time.Millisecond)
+		sr.Done()
+	})
+	require.Equal(t, relaycommon.StreamEndReasonDone, info.StreamStatus.EndReason)
+}

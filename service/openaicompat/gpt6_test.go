@@ -77,3 +77,28 @@ func TestGPT6TextAndToolCallsAreBothPreserved(t *testing.T) {
 	require.Equal(t, "tool_calls", got.Choices[0].FinishReason)
 	require.Len(t, got.Choices[0].Message.ParseToolCalls(), 1)
 }
+
+func TestGPT6FamilyCapabilities(t *testing.T) {
+	for _, model := range []string{"gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna"} {
+		t.Run(model, func(t *testing.T) {
+			require.True(t, ShouldChatCompletionsUseResponsesPolicy(model_setting.ChatCompletionsToResponsesPolicy{}, 3, constant.ChannelTypeAzure, model))
+			require.False(t, ShouldChatCompletionsUseResponsesPolicy(model_setting.ChatCompletionsToResponsesPolicy{}, 3, constant.ChannelTypeAws, model))
+			req := &dto.GeneralOpenAIRequest{Model: model, ReasoningEffort: "low", Temperature: lo.ToPtr(0.7), Messages: []dto.Message{{Role: "user", Content: "hello"}}}
+			got, err := ChatCompletionsRequestToResponsesRequest(req)
+			require.NoError(t, err)
+			require.Equal(t, model, got.Model)
+			require.Nil(t, got.Temperature)
+			req.ReasoningEffort = "minimal"
+			_, err = ChatCompletionsRequestToResponsesRequest(req)
+			require.Error(t, err)
+			req.ReasoningEffort = "none"
+			got, err = ChatCompletionsRequestToResponsesRequest(req)
+			if model == "gpt-6-sol" || model == "gpt-6-luna" {
+				require.NoError(t, err)
+				require.Equal(t, lo.ToPtr(0.7), got.Temperature)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}

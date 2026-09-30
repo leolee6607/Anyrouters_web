@@ -1,0 +1,81 @@
+[
+  {
+    "model": "gpt-6.1-sol",
+    "input": 2,
+    "output": 10,
+    "cache_read": 0.1,
+    "cache_write": 2.5,
+    "new": true,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gpt-6-sol",
+    "input": 2,
+    "output": 10,
+    "cache_read": 0.2,
+    "cache_write": 2.5,
+    "new": true,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gpt-6-luna",
+    "input": 0.1,
+    "output": 0.5,
+    "cache_read": 0.01,
+    "cache_write": 0.125,
+    "new": true,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gpt-5.6-sol",
+    "input": 4,
+    "output": 20,
+    "cache_read": 0.4,
+    "cache_write": 5.0,
+    "new": false,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gpt-5.6-terra",
+    "input": 2,
+    "output": 12,
+    "cache_read": 0.2,
+    "cache_write": 2.5,
+    "new": false,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gpt-5.6-luna",
+    "input": 0.2,
+    "output": 1.2,
+    "cache_read": 0.02,
+    "cache_write": 0.25,
+    "new": false,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "codex-auto-review",
+    "input": 0.2,
+    "output": 1.2,
+    "cache_read": 0.02,
+    "cache_write": 0.25,
+    "new": false,
+    "channel": 3,
+    "threshold": 272000
+  },
+  {
+    "model": "gemini-3.8-flash",
+    "input": 0.75,
+    "output": 3.75,
+    "cache_read": 0.075,
+    "new": true,
+    "channel": 2,
+    "threshold": null
+  }
+]

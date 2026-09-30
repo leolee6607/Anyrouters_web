@@ -132,7 +132,7 @@ if not isinstance(models, list):
     raise SystemExit(1)
 
 required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
-if sys.argv[2] == "gpt-6-astra":
+if sys.argv[2] not in required:
     required += (sys.argv[2],)
 for slug in required:
     entry = next(
@@ -335,7 +335,7 @@ if not isinstance(models, list):
     raise SystemExit("X Codex returned an invalid native model catalog; existing configuration was not changed.")
 
 required = ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
-if model == "gpt-6-astra":
+if model not in required:
     required += (model,)
 for slug in required:
     entry = next(
@@ -374,8 +374,8 @@ for line in current.splitlines(keepends=True):
     elif skip_provider:
         continue
     if at_root:
-        if model == "gpt-6-astra" and re.match(r"""^model_reasoning_effort\s*=\s*["'](?:none|minimal)["']""", stripped):
-            raise SystemExit("X gpt-6-astra does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed.")
+        if ((model in ("gpt-6-astra", "gpt-6.1-sol") and re.match(r"""^model_reasoning_effort\s*=\s*["'](?:none|minimal)["']""", stripped)) or (model in ("gpt-6-sol", "gpt-6-luna") and re.match(r"""^model_reasoning_effort\s*=\s*["']minimal["']""", stripped))):
+            raise SystemExit(f"X {model} does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed.")
         assignment = re.match(r"^([A-Za-z0-9_-]+)\s*=", stripped)
         if assignment and assignment.group(1) in managed_root_keys:
             continue

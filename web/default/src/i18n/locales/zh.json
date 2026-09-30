@@ -1,5 +1,6 @@
 {
   "translation": {
+    "Connect with gpt-6-astra; GPT-6.1 Sol, GPT-6 Sol, GPT-6 Luna and GPT-5.6 are available through /model with a compatible Codex version.": "默认接入 gpt-6-astra；兼容版本的 Codex 可通过 /model 选择 GPT-6.1 Sol、GPT-6 Sol、GPT-6 Luna 和 GPT-5.6。",
     "Setup checks Codex CLI and asks before installing or updating it. Declining leaves your configuration unchanged; a compatible CLI needs no update.": "脚本会检查 Codex CLI，需要安装或更新时会先征求你的同意；选择取消将保留原配置，已兼容的版本无需更新。",
     "Switch models and adjust reasoning effort in Codex.": "可在 Codex 内切换模型和调整推理强度。",
     "After setup, reopen Codex and start a new conversation. Contact support if you need help.": "配置完成后，请重新打开 Codex 并新建对话。如需帮助，可联系客服。",
