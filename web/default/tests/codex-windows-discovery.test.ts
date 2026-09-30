@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process'
 const pwsh = process.env.PWSH_BIN || (process.platform === 'win32' ? 'powershell.exe' : '')
 if (!pwsh && process.env.REQUIRE_POWERSHELL_TESTS === '1') throw new Error('PowerShell required')
 const psTest = pwsh ? test : test.skip
+// Allow Windows PowerShell cold startup; the child remains bounded by 15 seconds.
+const discoveryTestTimeout = 20_000
 const roots: string[] = []
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
 const scripts = resolve(import.meta.dir, '../../../router/install_scripts')
@@ -69,21 +71,21 @@ for (const script of ['codex.ps1', 'codex-config.ps1']) {
     const result = discovery(script, 'broken-candidate')
     expect(result.status, result.stdout + result.stderr).toBe(0)
     expect(result.stdout).toContain('broken-candidate-skipped')
-  })
+  }, discoveryTestTimeout)
   psTest('PowerShell ' + script + ' selects compatible CLI past stale npm and alpha copies', () => {
     const result = discovery(script, 'choose-compatible')
     expect(result.status, result.stdout + result.stderr).toBe(0)
     expect(result.stdout).toContain('compatible-selected')
-  })
+  }, discoveryTestTimeout)
   psTest('PowerShell ' + script + ' recognizes OpenAI.Codex and blocks missing bundled runtime', () => {
     const result = discovery(script, 'missing-desktop')
     expect(result.status, result.stdout + result.stderr).toBe(0)
     expect(result.stdout).toContain('missing-desktop-blocked')
-  })
+  }, discoveryTestTimeout)
   psTest('PowerShell ' + script + ' rejects missing explicit CLI override', () => {
     const result = discovery(script, 'invalid-override')
     expect(result.status, result.stdout + result.stderr).toBe(0)
-  })
+  }, discoveryTestTimeout)
 }
 
 test('Windows standalone scripts share the same discovery and update implementation', () => {
