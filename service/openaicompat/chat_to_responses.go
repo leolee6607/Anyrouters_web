@@ -80,11 +80,15 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 	if req.Model == "" {
 		return nil, errors.New("model is required")
 	}
-	if req.Model == "gpt-6-astra" {
+	if isGPT6Model(req.Model) {
 		switch req.ReasoningEffort {
 		case "", "low", "medium", "high", "xhigh", "max":
+		case "none":
+			if !gpt6AllowsNoReasoning(req.Model) {
+				return nil, fmt.Errorf("%s reasoning_effort does not support none", req.Model)
+			}
 		default:
-			return nil, fmt.Errorf("gpt-6-astra reasoning_effort must be low, medium, high, xhigh, or max")
+			return nil, fmt.Errorf("%s reasoning_effort is unsupported: %s", req.Model, req.ReasoningEffort)
 		}
 	}
 	if lo.FromPtrOr(req.N, 1) > 1 {
@@ -398,8 +402,8 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 		out.MaxOutputTokens = lo.ToPtr(maxOutputTokens)
 	}
 	// Existing playground sessions can retain old sampling controls. Strip
-	// them only for Astra, without changing the original request or other models.
-	if req.Model == "gpt-6-astra" {
+	// unsupported controls for reasoning, preserving sampling when effort is none.
+	if isGPT6Model(req.Model) && req.ReasoningEffort != "none" {
 		out.Temperature = nil
 		out.TopP = nil
 	}

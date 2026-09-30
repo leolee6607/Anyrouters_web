@@ -1052,3 +1052,47 @@ test('official restore scripts reset generic routing without logging the user ou
     expect(script).not.toMatch(/^\s*codex logout/m)
   }
 })
+
+for (const model of ['gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna']) {
+  for (const script of ['codex.sh', 'codex-config.sh'] as const) {
+    test(`${script} validates ${model} native metadata before configuration`, () => {
+      const run = isolatedShellFixture()
+      Object.assign(run.env, { ANYROUTERS_MODEL: model })
+      const missing = run.run(script)
+      expect(missing.status).not.toBe(0)
+      expect(existsSync(join(run.home, '.codex/config.toml'))).toBe(false)
+      const catalog = fixture()
+      catalog.models.push({ slug: model, use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+      writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+      mkdirSync(join(run.home, '.codex'), { recursive: true })
+      const path = join(run.home, '.codex/config.toml')
+      const original = 'model_reasoning_effort = "minimal"\n'
+      writeFileSync(path, original)
+      expect(run.run(script).status).not.toBe(0)
+      expect(readFileSync(path, 'utf8')).toBe(original)
+      writeFileSync(path, `model_reasoning_effort = "${model === 'gpt-6.1-sol' ? 'low' : 'none'}"\n`)
+      const valid = run.run(script)
+      expect(valid.status, valid.stdout + valid.stderr).toBe(0)
+      expect(readFileSync(path, 'utf8')).toContain(`model = "${model}"`)
+    })
+  }
+  for (const script of ['codex.ps1', 'codex-config.ps1'] as const) {
+    powerShellTest(`PowerShell ${script} validates ${model} selection and effort`, () => {
+      const run = isolatedPowerShellFixture()
+      Object.assign(run.env, { ANYROUTERS_MODEL: model })
+      const path = join(run.codexDir, 'config.toml')
+      const original = readFileSync(path, 'utf8')
+      expect(run.run(script).status).not.toBe(0)
+      expect(readFileSync(path, 'utf8')).toBe(original)
+      const catalog = fixture()
+      catalog.models.push({ slug: model, use_responses_lite: true, multi_agent_version: 'v2', tool_mode: 'code_mode_only' })
+      writeFileSync(run.env.CATALOG_FIXTURE, JSON.stringify(catalog))
+      writeFileSync(path, original.replace('"xhigh"', '"minimal"'))
+      expect(run.run(script).status).not.toBe(0)
+      writeFileSync(path, original.replace('"xhigh"', model === 'gpt-6.1-sol' ? '"low"' : '"none"'))
+      const valid = run.run(script)
+      expect(valid.status, valid.stdout + valid.stderr).toBe(0)
+      expect(readFileSync(path, 'utf8')).toContain(`model = "${model}"`)
+    }, 30_000)
+  }
+}

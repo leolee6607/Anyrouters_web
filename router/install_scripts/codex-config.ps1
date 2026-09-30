@@ -391,7 +391,7 @@ function Test-CodexNativeCompatibility([string]$CodexExe) {
     }
     $catalogEntries = @($resolvedCatalog.Entries)
     $wanted = @("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
-    if ($Model -eq "gpt-6-astra") { $wanted += $Model }
+    if ($wanted -notcontains $Model) { $wanted += $Model }
     foreach ($slug in $wanted) {
       $entry = $catalogEntries | Where-Object { (Get-JsonField $_ "slug") -eq $slug } | Select-Object -First 1
       if (
@@ -587,7 +587,7 @@ function Install-NativeCodexConfiguration(
     $catalogEntries = @($resolvedCatalog.Entries)
 
     $wanted = @("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
-    if ($SelectedModel -eq "gpt-6-astra") { $wanted += $SelectedModel }
+    if ($wanted -notcontains $SelectedModel) { $wanted += $SelectedModel }
     foreach ($slug in $wanted) {
       $entry = $catalogEntries | Where-Object { (Get-JsonField $_ "slug") -eq $slug } | Select-Object -First 1
       if (-not $entry) {
@@ -609,10 +609,11 @@ supports_websockets = false
 env_key = "OPENAI_API_KEY"
 "@
     $preservedConfig = Preserve-McpAndUnrelatedCodexConfig $configPath
-    if ($SelectedModel -eq "gpt-6-astra") {
+    if ($SelectedModel -in @("gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna")) {
       $rootConfig = [regex]::Split($preservedConfig, '(?m)^\s*\[')[0]
-      if ($rootConfig -match '(?m)^\s*model_reasoning_effort\s*=\s*["''](?:none|minimal)["'']') {
-        throw "X gpt-6-astra does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed."
+      $unsupportedEffort = if ($SelectedModel -in @("gpt-6-sol", "gpt-6-luna")) { "minimal" } else { "none|minimal" }
+      if ($rootConfig -match ('(?m)^\s*model_reasoning_effort\s*=\s*["''](?:' + $unsupportedEffort + ')["'']')) {
+        throw "X $SelectedModel does not support this model_reasoning_effort. Choose low, medium, high, xhigh or max, then re-run; existing configuration was not changed."
       }
     }
     $configParts = @("model = $modelLiteral`nmodel_provider = `"anyrouters`"")

@@ -13,7 +13,7 @@ const historyScript = readFileSync(
 test('Codex guides detect compatible installations before upgrading', () => {
   expect(source).toContain('第三步：快速接入')
   expect(source).toContain('Codex GPT-6 setup updated: September 7, 2026')
-  expect(source).toContain('Connect with gpt-6-astra; GPT-5.6 remains available through /model.')
+  expect(source).toContain('Connect with gpt-6-astra; GPT-6.1 Sol, GPT-6 Sol, GPT-6 Luna and GPT-5.6 are available through /model with a compatible Codex version.')
   expect(source).toContain('ANYROUTERS_MODEL=gpt-6-astra')
   expect(source).toContain('$env:ANYROUTERS_MODEL="gpt-6-astra"')
   expect(source).not.toContain('Setup success is not a full compatibility guarantee.')

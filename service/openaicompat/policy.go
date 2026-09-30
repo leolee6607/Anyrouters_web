@@ -6,9 +6,9 @@ import (
 )
 
 func ShouldChatCompletionsUseResponsesPolicy(policy model_setting.ChatCompletionsToResponsesPolicy, channelID int, channelType int, model string) bool {
-	// Astra tool calling requires Responses. This is a protocol capability,
+	// GPT-6 reasoning with tools requires Responses. This is a protocol capability,
 	// not an optional legacy routing preference. Keep non-native providers out.
-	if model == "gpt-6-astra" && (channelType == constant.ChannelTypeAzure || channelType == constant.ChannelTypeOpenAI) {
+	if isGPT6Model(model) && (channelType == constant.ChannelTypeAzure || channelType == constant.ChannelTypeOpenAI) {
 		return true
 	}
 	if !policy.IsChannelEnabled(channelID, channelType) {
@@ -24,4 +24,17 @@ func ShouldChatCompletionsUseResponsesGlobal(channelID int, channelType int, mod
 		channelType,
 		model,
 	)
+}
+
+// Match published IDs exactly; aliases on non-native providers have separate capabilities.
+func isGPT6Model(model string) bool {
+	switch model {
+	case "gpt-6-astra", "gpt-6-sol", "gpt-6.1-sol", "gpt-6-luna":
+		return true
+	}
+	return false
+}
+
+func gpt6AllowsNoReasoning(model string) bool {
+	return model == "gpt-6-sol" || model == "gpt-6-luna"
 }

@@ -270,7 +270,7 @@ function CodexUpdateNotice() {
       <ol className='mt-1 list-decimal pl-5'>
         <li>
           {t(
-            'Connect with gpt-6-astra; GPT-5.6 remains available through /model.'
+            'Connect with gpt-6-astra; GPT-6.1 Sol, GPT-6 Sol, GPT-6 Luna and GPT-5.6 are available through /model with a compatible Codex version.'
           )}
         </li>
         <li>
