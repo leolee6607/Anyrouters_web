@@ -211,6 +211,9 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				return
 			}
 		}
+		// The reader can reach EOF before buffered protocol terminal frames
+		// are processed. Only classify EOF after draining the handler queue.
+		info.StreamStatus.SetEndReason(relaycommon.StreamEndReasonEOF, nil)
 	})
 
 	// Scanner goroutine with improved error handling
@@ -223,7 +226,8 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				logger.LogError(c, fmt.Sprintf("scanner goroutine panic: %v", r))
 				info.StreamStatus.SetEndReason(relaycommon.StreamEndReasonPanic, fmt.Errorf("scanner panic: %v", r))
 			}
-			common.SafeSendBool(stopChan, true)
+			// Closing dataChan wakes the handler, which signals completion after
+			// processing queued frames. Do not cancel it merely on reader EOF.
 			logger.LogDebug(c, "scanner goroutine exited")
 		}()
 
@@ -279,7 +283,6 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				info.StreamStatus.SetEndReason(relaycommon.StreamEndReasonScannerErr, err)
 			}
 		}
-		info.StreamStatus.SetEndReason(relaycommon.StreamEndReasonEOF, nil)
 	})
 
 	// 主循环等待完成或超时
