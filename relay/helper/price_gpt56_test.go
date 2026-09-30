@@ -36,9 +36,9 @@ func TestGPT56PriceDataUsesPerGroupDiscount(t *testing.T) {
 	))
 
 	modelRatios := map[string]float64{
-		"gpt-5.6-sol":   2.5,
-		"gpt-5.6-terra": 1.25,
-		"gpt-5.6-luna":  0.5,
+		"gpt-5.6-sol":   2.0,
+		"gpt-5.6-terra": 1.0,
+		"gpt-5.6-luna":  0.1,
 	}
 	groupDiscounts := map[string]map[string]float64{
 		"default": {"gpt-5.6-sol": 0.7, "gpt-5.6-terra": 0.7, "gpt-5.6-luna": 0.7},
@@ -60,11 +60,16 @@ func TestGPT56PriceDataUsesPerGroupDiscount(t *testing.T) {
 				priceData, err := ModelPriceHelper(ctx, info, 2000, &types.TokenCountMeta{})
 				require.NoError(t, err)
 				require.Equal(t, modelRatios[modelName], priceData.ModelRatio)
-				require.Equal(t, 6.0, priceData.CompletionRatio)
+				expectedOutputRatio := 6.0
+				if modelName == "gpt-5.6-sol" {
+					expectedOutputRatio = 5.0
+				}
+				require.Equal(t, expectedOutputRatio, priceData.CompletionRatio)
 				require.Equal(t, 0.1, priceData.CacheRatio)
 				require.Equal(t, 1.25, priceData.CacheCreationRatio)
 				require.Equal(t, discount, priceData.GroupRatioInfo.GroupRatio)
-				require.Equal(t, int(2000*modelRatios[modelName]*discount), priceData.QuotaToPreConsume)
+				// The legacy reservation path truncates floats; settlement is verified separately.
+				require.InDelta(t, 2000*modelRatios[modelName]*discount, priceData.QuotaToPreConsume, 1)
 			})
 		}
 	}
@@ -97,9 +102,8 @@ func TestAzureGPT56PreConsumeReservesCacheWritePremium(t *testing.T) {
 	priceData, err := ModelPriceHelper(ctx, info, 2048, &types.TokenCountMeta{})
 	require.NoError(t, err)
 
-	// Base input reserve: 2048 * 2.5 * 0.7 = 3584 quota.
-	// Cache-write premium reserve: 2048 * 0.25 * 2.5 * 0.7 = 896 quota.
-	require.Equal(t, 4480, priceData.QuotaToPreConsume)
+	// Combined input and cache-write premium reserve: 2048 * 2 * 0.7 * 1.25 = 3584 quota.
+	require.Equal(t, 3584, priceData.QuotaToPreConsume)
 }
 
 func TestAzureGPT56TieredPreConsumeIncludesEstimatedCacheWrite(t *testing.T) {

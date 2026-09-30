@@ -331,3 +331,25 @@ func TestGeminiTextGenerationHandlerUsesEstimatedPromptTokensWhenUsagePromptMiss
 	require.Equal(t, 100, usage.CompletionTokens)
 	require.Equal(t, 110, usage.TotalTokens)
 }
+
+func TestGeminiStreamTerminalMetadataWithoutDoneSentinel(t *testing.T) {
+	for _, tc := range []struct {
+		name, body string
+		reason     relaycommon.StreamEndReason
+	}{
+		{"complete", `data: {"candidates":[{"index":0,"finishReason":"STOP","content":{"parts":[{"text":"OK"}]}}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":1,"totalTokenCount":4}}` + "\n", relaycommon.StreamEndReasonDone},
+		{"usage_after_finish", `data: {"candidates":[{"index":0,"finishReason":"STOP"}]}` + "\n" + `data: {"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":1,"totalTokenCount":4}}` + "\n", relaycommon.StreamEndReasonDone},
+		{"truncated", `data: {"candidates":[{"index":0,"content":{"parts":[{"text":"partial"}]}}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":1,"totalTokenCount":4}}` + "\n", relaycommon.StreamEndReasonEOF},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+			info := &relaycommon.RelayInfo{OriginModelName: "gemini-3.8-flash", ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "gemini-3.8-flash"}}
+			usage, apiErr := geminiStreamHandler(c, info, &http.Response{Body: io.NopCloser(bytes.NewBufferString(tc.body))}, func(_ string, _ *dto.GeminiChatResponse) bool { return true })
+			require.Nil(t, apiErr)
+			require.Equal(t, 3, usage.PromptTokens)
+			require.Equal(t, 1, usage.CompletionTokens)
+			require.Equal(t, tc.reason, info.StreamStatus.EndReason)
+		})
+	}
+}

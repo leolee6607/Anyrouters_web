@@ -1344,6 +1344,7 @@ func handleFinalStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.Ch
 func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response, callback func(data string, geminiResponse *dto.GeminiChatResponse) bool) (*dto.Usage, *types.NewAPIError) {
 	var usage = &dto.Usage{}
 	var imageCount int
+	finishedCandidates := map[int64]bool{}
 	responseText := strings.Builder{}
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
@@ -1375,8 +1376,21 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			*usage = mappedUsage
 		}
 
+		// Vertex SSE uses finishReason plus final usage, without an OpenAI [DONE] sentinel.
+		// Wait for usage even when it arrives in a separate frame, so billing is not truncated.
+		for _, candidate := range geminiResponse.Candidates {
+			finishedCandidates[candidate.Index] = candidate.FinishReason != nil && *candidate.FinishReason != ""
+		}
+		allFinished := len(finishedCandidates) > 0
+		for _, finished := range finishedCandidates {
+			allFinished = allFinished && finished
+		}
 		if !callback(data, &geminiResponse) {
 			sr.Stop(fmt.Errorf("gemini callback stopped"))
+			return
+		}
+		if allFinished && geminiResponse.UsageMetadata.TotalTokenCount > 0 {
+			sr.Done()
 		}
 	})
 
