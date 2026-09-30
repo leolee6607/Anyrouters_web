@@ -83,7 +83,7 @@ func TestOpenAICompletionRatiosMatchDefaultPricing(t *testing.T) {
 	require.Equal(t, 8.0, GetCompletionRatio("gpt-5"))
 	require.Equal(t, 8.0, GetCompletionRatio("gpt-5.2"))
 	require.Equal(t, 6.0, GetCompletionRatio("gpt-5.4-mini"))
-	require.Equal(t, 6.0, GetCompletionRatio("gpt-5.6-sol"))
+	require.Equal(t, 5.0, GetCompletionRatio("gpt-5.6-sol"))
 	require.Equal(t, 6.0, GetCompletionRatio("gpt-5.6-terra"))
 	require.Equal(t, 6.0, GetCompletionRatio("gpt-5.6-luna"))
 }
@@ -98,9 +98,9 @@ func TestCodexModelRatiosMatchDefaultPricing(t *testing.T) {
 		"gpt-5.4":       1.25,
 		"gpt-5.4-pro":   15,
 		"gpt-5.5":       2.5,
-		"gpt-5.6-sol":   2.5,
-		"gpt-5.6-terra": 1.25,
-		"gpt-5.6-luna":  0.5,
+		"gpt-5.6-sol":   2.0,
+		"gpt-5.6-terra": 1.0,
+		"gpt-5.6-luna":  0.1,
 	}
 	for model, expected := range cases {
 		modelRatio, ok, _ := GetModelRatio(model)
@@ -156,4 +156,15 @@ func TestUnknownModelHasNoImplicitPremiumFallback(t *testing.T) {
 	require.False(t, success)
 	require.False(t, usePrice)
 	require.Zero(t, priceOrRatio)
+}
+
+func TestGPT56CompletionRatioHonorsPriceConfiguration(t *testing.T) {
+	resetRatioMapsForTest(t)
+	require.NoError(t, UpdateCompletionRatioByJSONString(`{"gpt-5.6-sol":5,"gpt-5.6-terra":6,"gpt-5.6-luna":6}`))
+	require.Equal(t, CompletionRatioInfo{Ratio: 5, Locked: false}, GetCompletionRatioInfo("gpt-5.6-sol"))
+	require.Equal(t, 5.0, GetCompletionRatio("gpt-5.6-sol"))
+	require.NoError(t, UpdateCompletionRatioByJSONString(`{"gpt-5.6-sol":4.5}`))
+	require.Equal(t, 4.5, GetCompletionRatio("gpt-5.6-sol"))
+	require.Equal(t, CompletionRatioInfo{Ratio: 4.5, Locked: false}, GetCompletionRatioInfo("gpt-5.6-sol"))
+	require.Equal(t, 6.0, GetCompletionRatio("gpt-5.5"))
 }
