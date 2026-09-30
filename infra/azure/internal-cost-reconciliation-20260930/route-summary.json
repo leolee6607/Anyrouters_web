@@ -1,0 +1,75 @@
+{
+  "success_routes": [
+    {
+      "model": "gpt-5.6-sol",
+      "path": "/v1/chat/completions",
+      "stream": 0,
+      "count": 653,
+      "input": 44971044,
+      "output": 7152240,
+      "max_seconds": 1726
+    },
+    {
+      "model": "gpt-6-astra",
+      "path": "/v1/responses",
+      "stream": 1,
+      "count": 1473,
+      "input": 174168654,
+      "output": 363546,
+      "max_seconds": 170
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "path": "/v1/responses",
+      "stream": 1,
+      "count": 222,
+      "input": 10714620,
+      "output": 130618,
+      "max_seconds": 46
+    },
+    {
+      "model": "gpt-6-astra",
+      "path": "/v1/chat/completions",
+      "stream": 0,
+      "count": 15,
+      "input": 5089,
+      "output": 11564,
+      "max_seconds": 62
+    },
+    {
+      "model": "gpt-6-astra",
+      "path": "/v1/responses",
+      "stream": 0,
+      "count": 2,
+      "input": 63,
+      "output": 26,
+      "max_seconds": 2
+    }
+  ],
+  "error_routes": [
+    {
+      "status": "500",
+      "path": "/v1/chat/completions",
+      "count": 41
+    },
+    {
+      "status": "499",
+      "path": "/v1/responses",
+      "count": 45
+    },
+    {
+      "status": "408",
+      "path": "/v1/chat/completions",
+      "count": 7
+    }
+  ],
+  "timeouts_408_seconds": [
+    1740.275436837,
+    1740.202542921,
+    1740.195765439,
+    1740.188220942,
+    1740.329371947,
+    1740.330570183,
+    1740.592041835
+  ]
+}
