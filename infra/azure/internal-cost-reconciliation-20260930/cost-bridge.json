@@ -1,0 +1,85 @@
+[
+  {
+    "model": "gpt-5.6-sol",
+    "n": 875.0,
+    "old_gross": 265.03700625,
+    "debit": 106.014858,
+    "rounding": 5.55e-05,
+    "same_usage_at_bill_prices": 182.898173,
+    "bill": 195.564868,
+    "discount_effect": 159.02214825,
+    "old_price_difference": 82.13883325,
+    "usage_residual": 12.666695,
+    "direct_difference": 89.55001,
+    "discounts": {
+      "0.4": 875
+    }
+  },
+  {
+    "model": "gpt-6-astra",
+    "n": 1490.0,
+    "old_gross": 247.570103,
+    "debit": 173.298536,
+    "rounding": 4.29e-05,
+    "same_usage_at_bill_prices": 247.570103,
+    "bill": 248.5901415,
+    "discount_effect": 74.271567,
+    "old_price_difference": 0.0,
+    "usage_residual": 1.0200385,
+    "direct_difference": 75.2916055,
+    "discounts": {
+      "0.7": 1488,
+      "0.4": 2
+    }
+  },
+  {
+    "model": "gpt-5.6-luna",
+    "n": 372.0,
+    "old_gross": 8.24772065,
+    "debit": 4.779288,
+    "rounding": 1.12e-05,
+    "same_usage_at_bill_prices": 1.64954413,
+    "bill": 1.64491353,
+    "discount_effect": 3.46843265,
+    "old_price_difference": 6.59817652,
+    "usage_residual": -0.0046306,
+    "direct_difference": -3.13437447,
+    "discounts": {
+      "0.7": 72,
+      "0.4": 300
+    }
+  },
+  {
+    "model": "gpt-5.6-terra",
+    "n": 10.0,
+    "old_gross": 0.37192875,
+    "debit": 0.260348,
+    "rounding": -2.125e-06,
+    "same_usage_at_bill_prices": 0.297543,
+    "bill": 0.296588,
+    "discount_effect": 0.11158075,
+    "old_price_difference": 0.07438575,
+    "usage_residual": -0.000955,
+    "direct_difference": 0.03624,
+    "discounts": {
+      "0.7": 10
+    }
+  },
+  {
+    "model": "gpt-5.5",
+    "n": 774.0,
+    "old_gross": 115.491702,
+    "debit": 53.400086,
+    "rounding": 1.1e-06,
+    "same_usage_at_bill_prices": 115.491702,
+    "bill": 115.491702,
+    "discount_effect": 62.091616,
+    "old_price_difference": 0.0,
+    "usage_residual": 0.0,
+    "direct_difference": 62.091616,
+    "discounts": {
+      "0.4": 618,
+      "0.7": 156
+    }
+  }
+]
