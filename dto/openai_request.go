@@ -897,9 +897,12 @@ type WebSearchOptions struct {
 
 // https://platform.openai.com/docs/api-reference/responses/create
 type OpenAIResponsesRequest struct {
-	Model   string          `json:"model"`
-	Input   json.RawMessage `json:"input,omitempty"`
-	Include json.RawMessage `json:"include,omitempty"`
+	// Compatibility aliases are resolved before native OpenAI/Azure requests.
+	ReasoningEffort string          `json:"reasoning_effort,omitempty"`
+	THINKING        json.RawMessage `json:"thinking,omitempty"`
+	Model           string          `json:"model"`
+	Input           json.RawMessage `json:"input,omitempty"`
+	Include         json.RawMessage `json:"include,omitempty"`
 	// 在后台运行推理，暂时还不支持依赖的接口
 	// Background         json.RawMessage `json:"background,omitempty"`
 	Conversation       json.RawMessage `json:"conversation,omitempty"`

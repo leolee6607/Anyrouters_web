@@ -28,6 +28,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/common_handler"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/service/openaicompat"
 	"github.com/QuantumNous/new-api/setting/model_setting"
 	"github.com/QuantumNous/new-api/setting/reasoning"
 	"github.com/QuantumNous/new-api/types"
@@ -324,7 +325,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		}
 
 		// gpt-5系列模型适配 归零不再支持的参数
-		if isGPT5Model {
+		if isGPT5Model && !openaicompat.IsNativeOpenAIChannel(info.ChannelType) {
 			request.Temperature = nil
 			request.TopP = nil
 			request.LogProbs = nil
@@ -348,6 +349,11 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 			}
 		}
 	}
+
+	if err := openaicompat.NormalizeNativeChatParameters(request, info.ChannelType); err != nil {
+		return nil, err
+	}
+	info.ReasoningEffort = request.ReasoningEffort
 
 	return request, nil
 }
@@ -599,6 +605,11 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 			request.Reasoning.Effort = effort
 		}
 		request.Model = originModel
+	}
+	if info != nil && info.ChannelMeta != nil {
+		if err := openaicompat.NormalizeNativeResponsesParameters(&request, info.ChannelType); err != nil {
+			return nil, err
+		}
 	}
 	if info != nil && request.Reasoning != nil && request.Reasoning.Effort != "" {
 		info.ReasoningEffort = request.Reasoning.Effort
