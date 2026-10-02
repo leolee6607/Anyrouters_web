@@ -1,0 +1,60 @@
+{
+  "verified_at": "2026-10-02T13:51:56.689474+00:00",
+  "release": {
+    "verified_at": "2026-10-02T13:46:23.957393+00:00",
+    "revision": "ca-anyrouters-web--safety-36f364b95",
+    "traffic_percent": 100,
+    "health": "Healthy",
+    "running": "Running",
+    "image_digest": "sha256:317c60e5cf398f7ab01644617e905771e4b90b570dc97ad5c44061674610466a",
+    "build": "ccf",
+    "source_commit": "36f364b95ec95d54f2c1f84c94701edf9017592d",
+    "configuration_preserved": true,
+    "prior_revision": "ca-anyrouters-web--audit-errors-20260930"
+  },
+  "validation": {
+    "candidate": {
+      "total_cases": 38,
+      "normal_calls": 28,
+      "normal_usage_and_charges_exact": 28,
+      "expected_invalid_requests": 10,
+      "extra_invalid_wallet_and_token_refunds": 5,
+      "modern_tool_roundtrips": 2,
+      "stream_tool_call": true,
+      "wallet_token_logs_reconciled": true,
+      "temporary_tokens_active": 0
+    },
+    "production": {
+      "total_cases": 38,
+      "normal_calls": 28,
+      "normal_usage_and_charges_exact": 28,
+      "expected_invalid_requests": 10,
+      "extra_invalid_wallet_and_token_refunds": 5,
+      "modern_tool_roundtrips": 2,
+      "stream_tool_call": true,
+      "wallet_token_logs_reconciled": true,
+      "temporary_tokens_active": 0
+    }
+  },
+  "public_price_models": 8,
+  "installer_hashes_preserved": 4,
+  "local_checks": [
+    "go test ./...",
+    "go test -race ./service/openaicompat ./relay/channel/openai ./relay ./controller"
+  ],
+  "limits": [
+    "Legacy functions/function_call and function-role history are rejected before upstream; use tools/tool_choice.",
+    "Exact customer thinking payload was not recorded; no claim of customer retest."
+  ],
+  "incomplete_live_validation_attempts": 1,
+  "incomplete_attempt_details": "First production maintenance run returned HTTP200 but missed literal OK assertion; response body unavailable. Diagnostic retry passed unchanged assertions. Both real calls correctly charged; temporary token revoked.",
+  "post_audit": {
+    "from_utc": "2026-10-02T13:46:16Z",
+    "through_utc": "2026-10-02T13:52:00Z",
+    "non_test_error_groups": 0,
+    "temporary_tokens_active": 0,
+    "initial_release_luna_terra_non_test_paid_requests": 0,
+    "initial_release_inspection_from_utc": "2026-10-02T13:15:00Z",
+    "initial_release_inspection_through_utc": "2026-10-02T13:29:00Z"
+  }
+}

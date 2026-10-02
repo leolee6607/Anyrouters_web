@@ -235,10 +235,6 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		if callID == "" {
 			return true
 		}
-		if outputText.Len() > 0 {
-			// Prefer streaming assistant text over tool calls to match non-stream behavior.
-			return true
-		}
 		if !sendStartIfNeeded() {
 			return false
 		}
@@ -486,7 +482,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				if streamResp.Type == "response.incomplete" {
 					finishReason = responsesIncompleteFinishReason(streamResp.Response)
 				}
-				if sawToolCall && outputText.Len() == 0 {
+				if sawToolCall && streamResp.Type != "response.incomplete" {
 					finishReason = "tool_calls"
 				}
 				stop := helper.GenerateStopResponse(responseId, createAt, model, finishReason)
