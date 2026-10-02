@@ -16,6 +16,7 @@
 - 修改前：实际适配器测试复现 thinking 泄漏、Sol Responses 温度未过滤；标准 reasoning_effort 对照正常。
 - 修改后：Go 全仓回归；新增别名、冲突、预算、供应商隔离、七型号参数、显式零值和实际 Chat→Responses 出站请求测试。
 - Azure 原生验证：5.6 Sol/Terra/Luna 的 none＋temperature/top_p，在 Chat 和 Responses 共六次调用均 200。
+- 额外并发检查发现既有 Gemini 测试在并行用例中反复修改 Gin 全局模式；移到测试初始化阶段，相关四包 race 检查全部通过。仅测试夹具改变，不影响运行代码。
 - 安装脚本回归：本机 54 pass，20 个 Windows PowerShell 测试因运行环境不支持跳过；脚本文件未修改。前次 Windows CI 不代表本次重新运行。
 - 本地全仓测试使用已有前端构建产物完成 go:embed 编译；发布镜像会从源代码重新构建前端。
 - 候选、正式域名实际流式/工具/错误不扣费与安装脚本哈希，发布后追加到 release-result.md。
