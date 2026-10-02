@@ -163,6 +163,16 @@ func removeNativeSampling(model, effort string) bool {
 }
 
 func NormalizeNativeChatParameters(req *dto.GeneralOpenAIRequest, channelType int) error {
+	return normalizeNativeChatParameters(req, channelType, true)
+}
+
+// The Responses bridge historically preserved legacy GPT-5 sampling controls.
+// Keep that boundary distinct from the direct Chat adaptor's older rule.
+func NormalizeNativeChatParametersForResponses(req *dto.GeneralOpenAIRequest, channelType int) error {
+	return normalizeNativeChatParameters(req, channelType, false)
+}
+
+func normalizeNativeChatParameters(req *dto.GeneralOpenAIRequest, channelType int, stripLegacySampling bool) error {
 	if req == nil || !IsNativeOpenAIChannel(channelType) || !nativeReasoningModel(req.Model) {
 		return nil
 	}
@@ -174,7 +184,7 @@ func NormalizeNativeChatParameters(req *dto.GeneralOpenAIRequest, channelType in
 	req.THINKING = nil
 	req.EnableThinking = nil
 	req.Reasoning = nil
-	if removeNativeSampling(req.Model, effort) {
+	if (stripLegacySampling || knownEffortModel(req.Model)) && removeNativeSampling(req.Model, effort) {
 		req.Temperature = nil
 		req.TopP = nil
 		req.LogProbs = nil
@@ -187,7 +197,13 @@ func NormalizeNativeResponsesParameters(req *dto.OpenAIResponsesRequest, channel
 	if req == nil || !IsNativeOpenAIChannel(channelType) || !nativeReasoningModel(req.Model) {
 		return nil
 	}
-	effort := req.ReasoningEffort
+	effort := ""
+	if req.ReasoningEffort != nil {
+		effort = *req.ReasoningEffort
+		if effort == "" {
+			return parameterError("reasoning_effort must be a non-empty string; use reasoning.effort for Responses")
+		}
+	}
 	if req.Reasoning != nil && req.Reasoning.Effort != "" {
 		if effort != "" && effort != req.Reasoning.Effort {
 			return parameterError("conflicting reasoning_effort and reasoning.effort; use reasoning.effort for Responses")
@@ -204,10 +220,13 @@ func NormalizeNativeResponsesParameters(req *dto.OpenAIResponsesRequest, channel
 		}
 		req.Reasoning.Effort = effort
 	}
-	req.ReasoningEffort = ""
+	req.ReasoningEffort = nil
 	req.THINKING = nil
 	req.EnableThinking = nil
-	if removeNativeSampling(req.Model, effort) {
+	// Responses previously preserved legacy model sampling. Only normalize the
+	// current families whose capabilities are verified; do not apply Chat's
+	// historical blanket GPT-5 stripping rule to older Responses requests.
+	if knownEffortModel(req.Model) && removeNativeSampling(req.Model, effort) {
 		req.Temperature = nil
 		req.TopP = nil
 		req.TopLogProbs = nil

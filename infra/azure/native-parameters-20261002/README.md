@@ -1,5 +1,7 @@
 # 原生 GPT 参数兼容修复（2026-10-02）
 
+后续维护复核、补充修复与最终运行版本见 [safety-followup.md](./safety-followup.md)。初次发布记录保留为历史证据。
+
 ## 问题与处理
 
 近期错误审计发现重复的 GPT-5.6 Luna `Unknown parameter: thinking` 和 Sol `Unsupported parameter: temperature`。渠道未启用原样透传，也没有注入 thinking 的参数覆盖。Chat 原生适配器与 Chat→Responses / 原生 Responses 的采样规则不一致；通用请求 DTO 则把其他供应商的 thinking 原样送给 Azure。修改前使用实际适配器复现以上差异。

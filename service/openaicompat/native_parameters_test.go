@@ -126,7 +126,7 @@ func TestNativeResponsesAliasesPreserveSummary(t *testing.T) {
 	require.Equal(t, "none", req.Reasoning.Effort)
 	require.Equal(t, "auto", req.Reasoning.Summary)
 	require.Empty(t, req.THINKING)
-	req.ReasoningEffort = "high"
+	req.ReasoningEffort = common.GetPointer("high")
 	require.Error(t, NormalizeNativeResponsesParameters(&req, constant.ChannelTypeAzure))
 }
 
@@ -138,4 +138,23 @@ func TestNativeToolsUseResponsesWithoutChangingOtherProviders(t *testing.T) {
 		req.Tools = nil
 		require.False(t, NativeToolsRequireResponses(req, constant.ChannelTypeAzure))
 	}
+}
+
+func TestNativeResponsesPreservesLegacySampling(t *testing.T) {
+	for _, model := range []string{"gpt-5.1", "gpt-5.2", "gpt-5.5"} {
+		for _, effort := range []string{"", "none"} {
+			req := &dto.OpenAIResponsesRequest{Model: model, Reasoning: &dto.Reasoning{Effort: effort}, Temperature: common.GetPointer(0.0), TopP: common.GetPointer(0.8), TopLogProbs: common.GetPointer(0), Include: []byte(`["message.output_text.logprobs"]`)}
+			require.NoError(t, NormalizeNativeResponsesParameters(req, constant.ChannelTypeAzure))
+			require.Equal(t, common.GetPointer(0.0), req.Temperature, model)
+			require.Equal(t, common.GetPointer(0.8), req.TopP, model)
+			require.Equal(t, common.GetPointer(0), req.TopLogProbs, model)
+			require.JSONEq(t, `["message.output_text.logprobs"]`, string(req.Include))
+		}
+	}
+}
+
+func TestNativeResponsesRejectsExplicitEmptyEffortAlias(t *testing.T) {
+	var req dto.OpenAIResponsesRequest
+	require.NoError(t, common.Unmarshal([]byte(`{"model":"gpt-5.6-luna","reasoning_effort":""}`), &req))
+	require.Error(t, NormalizeNativeResponsesParameters(&req, constant.ChannelTypeAzure))
 }

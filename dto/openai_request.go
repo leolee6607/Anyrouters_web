@@ -898,7 +898,7 @@ type WebSearchOptions struct {
 // https://platform.openai.com/docs/api-reference/responses/create
 type OpenAIResponsesRequest struct {
 	// Compatibility aliases are resolved before native OpenAI/Azure requests.
-	ReasoningEffort string          `json:"reasoning_effort,omitempty"`
+	ReasoningEffort *string         `json:"reasoning_effort,omitempty"`
 	THINKING        json.RawMessage `json:"thinking,omitempty"`
 	Model           string          `json:"model"`
 	Input           json.RawMessage `json:"input,omitempty"`

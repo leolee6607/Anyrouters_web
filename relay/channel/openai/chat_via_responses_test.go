@@ -158,3 +158,31 @@ func TestControlledGPT55LongStreamTextAndUsageAreConsistent(t *testing.T) {
 	t.Logf("request_id=req-stream-test finish_reason=stop usage_total=%d server_text_bytes=%d client_text_bytes=%d",
 		usage.TotalTokens, len(expected), len(rendered))
 }
+
+func TestResponsesStreamTextAndToolsPreserved(t *testing.T) {
+	for _, tc := range []struct{ name, terminal, status, wantFinish string }{
+		{"completed", "response.completed", "completed", "tool_calls"},
+		{"incomplete tool arguments", "response.incomplete", "incomplete", "length"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body := strings.Join([]string{
+				`data: {"type":"response.output_text.delta","delta":"I will check now."}`,
+				`data: {"type":"response.output_item.added","item":{"id":"fc_1","type":"function_call","call_id":"call_1","name":"get_weather","arguments":""}}`,
+				`data: {"type":"response.function_call_arguments.delta","item_id":"fc_1","delta":"{}"}`,
+				`data: {"type":"response.output_item.done","item":{"id":"fc_1","type":"function_call","call_id":"call_1","name":"get_weather","arguments":"{}"}}`,
+				`data: {"type":"` + tc.terminal + `","response":{"id":"resp_1","status":"` + tc.status + `","model":"gpt-5.6-luna","incomplete_details":{"reason":"max_output_tokens"},"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30}}}`,
+				"",
+			}, "\n")
+			c, recorder, resp, info := newResponsesChatStreamTest(t, body)
+			info.UpstreamModelName = "gpt-5.6-luna"
+			usage, apiErr := OaiResponsesToChatStreamHandler(c, info, resp)
+			require.Nil(t, apiErr)
+			require.Equal(t, 30, usage.TotalTokens)
+			require.Equal(t, "I will check now.", chatTextFromSSE(t, recorder.Body.String()))
+			require.Equal(t, 1, strings.Count(recorder.Body.String(), `"name":"get_weather"`))
+			require.Equal(t, 1, strings.Count(recorder.Body.String(), `"arguments":"{}"`), "done event must not repeat tool arguments")
+			require.Contains(t, recorder.Body.String(), `"finish_reason":"`+tc.wantFinish+`"`)
+			require.Equal(t, 1, strings.Count(recorder.Body.String(), "data: [DONE]"))
+		})
+	}
+}

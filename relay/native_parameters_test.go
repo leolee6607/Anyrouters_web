@@ -38,6 +38,9 @@ func TestNativeParametersOnProductionChatBridge(t *testing.T) {
 		{"Sol legacy sampling", `"temperature":0.7,"top_p":1,"reasoning_effort":"low"`, "low", false},
 		{"disabled alias", `"thinking":{"type":"disabled"}`, "none", false},
 		{"enabled alias", `"thinking":true,"reasoning_effort":"low"`, "low", false},
+		{"legacy functions rejected before upstream", `"functions":[{"name":"echo","parameters":{"type":"object"}}],"function_call":{"name":"echo"}`, "", true},
+		{"legacy function history rejected before upstream", `"messages":[{"role":"function","name":"echo","content":"OK"}]`, "", true},
+		{"legacy function choice rejected before upstream", `"function_call":"auto"`, "", true},
 		{"budget rejected before upstream", `"thinking":{"type":"enabled","budget_tokens":1024}`, "", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -68,4 +71,19 @@ func TestNativeParametersOnProductionChatBridge(t *testing.T) {
 			require.Nil(t, sent.TopP)
 		})
 	}
+}
+
+func TestNativeChatBridgePreservesLegacySampling(t *testing.T) {
+	req := &dto.GeneralOpenAIRequest{Model: "gpt-5.2", ReasoningEffort: "none", Temperature: common.GetPointer(0.0), TopP: common.GetPointer(0.8), Messages: []dto.Message{{Role: "user", Content: "OK"}}}
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	info := &relaycommon.RelayInfo{RelayFormat: types.RelayFormatOpenAI, ChannelMeta: &relaycommon.ChannelMeta{ChannelType: constant.ChannelTypeAzure, UpstreamModelName: req.Model}}
+	a := &nativeParamsCapture{}
+	_, err := chatCompletionsViaResponses(c, info, a, req)
+	require.Nil(t, err)
+	var sent dto.OpenAIResponsesRequest
+	require.NoError(t, common.Unmarshal(a.body, &sent))
+	require.Equal(t, common.GetPointer(0.0), sent.Temperature)
+	require.Equal(t, common.GetPointer(0.8), sent.TopP)
+	require.Equal(t, "none", sent.Reasoning.Effort)
 }

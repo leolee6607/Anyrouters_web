@@ -93,7 +93,7 @@ func chatCompletionsViaResponses(c *gin.Context, info *relaycommon.RelayInfo, ad
 		return nil, types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 	}
 
-	if err := openaicompat.NormalizeNativeChatParameters(&overriddenChatReq, info.ChannelType); err != nil {
+	if err := openaicompat.NormalizeNativeChatParametersForResponses(&overriddenChatReq, info.ChannelType); err != nil {
 		return nil, types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
 	responsesReq, err := service.ChatCompletionsRequestToResponsesRequest(&overriddenChatReq)

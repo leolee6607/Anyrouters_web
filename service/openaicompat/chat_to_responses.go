@@ -80,6 +80,12 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 	if req.Model == "" {
 		return nil, errors.New("model is required")
 	}
+	// The bridge emits modern tool_calls, not the legacy function_call response
+	// contract. Reject legacy requests before any paid upstream work rather than
+	// silently dropping their function definitions or changing reply semantics.
+	if len(req.Functions) > 0 || len(req.FunctionCall) > 0 {
+		return nil, errors.New("legacy functions/function_call are not supported in Responses compatibility mode; use tools/tool_choice and tool messages with tool_call_id")
+	}
 	if isGPT6Model(req.Model) {
 		switch req.ReasoningEffort {
 		case "", "low", "medium", "high", "xhigh", "max":
@@ -102,6 +108,9 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 		role := strings.TrimSpace(msg.Role)
 		if role == "" {
 			continue
+		}
+		if role == "function" {
+			return nil, errors.New("legacy function messages are not supported in Responses compatibility mode; use tool messages with tool_call_id")
 		}
 
 		if role == "tool" || role == "function" {
