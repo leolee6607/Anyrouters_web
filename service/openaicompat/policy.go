@@ -2,6 +2,7 @@ package openaicompat
 
 import (
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/setting/model_setting"
 )
 
@@ -37,4 +38,13 @@ func isGPT6Model(model string) bool {
 
 func gpt6AllowsNoReasoning(model string) bool {
 	return model == "gpt-6-sol" || model == "gpt-6-luna"
+}
+
+// GPT-5.6 Luna/Terra Chat tools cannot be combined with reasoning. Responses
+// supports both, including clients whose thinking alias is normalized later.
+func NativeToolsRequireResponses(req *dto.GeneralOpenAIRequest, channelType int) bool {
+	if req == nil || !IsNativeOpenAIChannel(channelType) || (len(req.Tools) == 0 && len(req.Functions) == 0) {
+		return false
+	}
+	return req.Model == "gpt-5.6-luna" || req.Model == "gpt-5.6-terra"
 }
