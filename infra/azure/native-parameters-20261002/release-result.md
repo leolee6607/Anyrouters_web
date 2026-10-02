@@ -1,6 +1,6 @@
 # 发布验收（2026-10-02）
 
-已上线，正式版本 `ca-anyrouters-web--params-cd57e8b2b` 100% 流量，Healthy / Running。UTC 13:16:43（北京时间 21:16:43）正式调用验证完成。
+以下为初次发布历史，现已由 [维护复核版本](./safety-followup.md) 替代。初次正式版本 `ca-anyrouters-web--params-cd57e8b2b` 100% 流量，Healthy / Running。UTC 13:16:43（北京时间 21:16:43）正式调用验证完成。
 
 - 运行源码：`cd57e8b2b1406da72970b6ab14e62269d64eacb8`。
 - ACR 构建：`cce`，成功，用时 6m11s。
