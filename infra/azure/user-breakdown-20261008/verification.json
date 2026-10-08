@@ -1,0 +1,93 @@
+{
+  "runtime_commit": "117ea5bf292aaf64376f39257860fc8d04243146",
+  "build": "ccp",
+  "tests": {
+    "go_model_controller": "pass",
+    "go_statistics_race": "pass",
+    "go_full_race": "pre-existing async user cache test teardown race reproduced on unchanged d3fb3d1",
+    "frontend_all": {
+      "pass": 139,
+      "skip": 28,
+      "fail": 0,
+      "assertions": 1354
+    },
+    "frontend_period_csv": {
+      "pass": 8,
+      "assertions": 52
+    },
+    "typecheck_lint_format_build": "pass",
+    "two_axis_review": "reported findings addressed and reviewed",
+    "local_ui": "simple/detail switching; previous month; two Azure channels merged; refunds; model/channel details verified"
+  },
+  "candidate": {
+    "status": {
+      "http": 200,
+      "success": true
+    },
+    "pricing": {
+      "http": 200,
+      "success": true,
+      "models": 32
+    },
+    "monthly-unauth": {
+      "http": 401,
+      "success": false
+    }
+  },
+  "configuration_preserved": true,
+  "canary": {
+    "old_percent": 99,
+    "new_percent": 1,
+    "health": "Healthy",
+    "smoke": {
+      "status": {
+        "http": 200,
+        "success": true
+      },
+      "pricing": {
+        "http": 200,
+        "success": true,
+        "models": 32
+      },
+      "monthly-unauth": {
+        "http": 401,
+        "success": false
+      }
+    }
+  },
+  "production": {
+    "revision": "ca-anyrouters-web--user-breakdown-117ea5bf2",
+    "image": "acranyroutersprod.azurecr.io/new-api@sha256:97aa9f168eabf42f11c5af3fd9664b49ec96694becbff824ee91a7d2a9c297a2",
+    "build": "ccp",
+    "runtime_commit": "117ea5bf292aaf64376f39257860fc8d04243146",
+    "traffic_percent": 100,
+    "smoke": {
+      "status": {
+        "http": 200,
+        "success": true
+      },
+      "pricing": {
+        "http": 200,
+        "success": true,
+        "models": 32
+      },
+      "monthly-unauth": {
+        "http": 401,
+        "success": false
+      }
+    },
+    "console_scan": {
+      "lines": 102,
+      "matching_errors": 0
+    },
+    "authenticated_ui": "user info entry, identity, default simple previous month, detailed model/channel/monthly views and amounts verified",
+    "csv_vs_independent_sql": {
+      "providers": true,
+      "models": true,
+      "channels": true
+    },
+    "monthly_and_annual_totals_agree_with_independent_sql": true,
+    "verified_at": "2026-10-08T13:18:01.198800+08:00"
+  },
+  "rollback_revision": "ca-anyrouters-web--user-monthly-479fe519c"
+}
