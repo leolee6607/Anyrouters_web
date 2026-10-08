@@ -5070,6 +5070,8 @@
     "Unable to load monthly usage. Please retry.": "Unable to load monthly usage. Please retry.",
     "As of {{time}} · Beijing time (UTC+8)": "As of {{time}} · Beijing time (UTC+8)",
     "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.": "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.",
-    "Consumption records": "Consumption records"
+    "Consumption records": "Consumption records",
+    "Billing year": "Billing year",
+    "Export CSV": "Export CSV"
   }
 }

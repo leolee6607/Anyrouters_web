@@ -46,7 +46,7 @@ export function UserMonthlyUsageDialog(props: {
       }
     >
       <div className='flex flex-wrap items-center gap-3'>
-        <Label htmlFor='usage-year'>{t('Year')}</Label>
+        <Label htmlFor='usage-year'>{t('Billing year')}</Label>
         <select
           id='usage-year'
           className='bg-background rounded-md border px-3 py-2 text-sm'

@@ -5045,6 +5045,8 @@
     "Unable to load monthly usage. Please retry.": "月度消费加载失败，请重试。",
     "As of {{time}} · Beijing time (UTC+8)": "截至 {{time}} · 北京时间（UTC+8）",
     "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.": "统计基于现存消费与退款日志，已清理或未记录的用量不包含在内；渠道名称按当前设置显示。",
-    "Consumption records": "消费记录数"
+    "Consumption records": "消费记录数",
+    "Billing year": "年份",
+    "Export CSV": "导出 CSV"
   }
 }
