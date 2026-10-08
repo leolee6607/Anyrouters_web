@@ -33,6 +33,7 @@ import {
   defaultResolutionForModel,
   readFilesToAttachments,
   resolutionsForModel,
+  imageCountsForModel,
   supportsDocumentInput,
   videoResolutionsForModel,
   videoDurationsForResolution,
@@ -439,6 +440,9 @@ export function Playground() {
                 const resolutions = resolutionsForModel(value)
                 return {
                   ...prev,
+                  count: imageCountsForModel(value).includes(prev.count)
+                    ? prev.count
+                    : 1,
                   resolution: resolutions.includes(prev.resolution)
                     ? prev.resolution
                     : defaultResolutionForModel(value),

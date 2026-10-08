@@ -37,8 +37,12 @@ export type ImageModelKind = 'gemini' | 'openai' | 'video'
 const IMAGE_MODEL_RE =
   /image|imagen|veo|sora|gemini-omni-flash|dall|flux|midjourney|stable-?diffusion/
 
+export function isNanoBanana21Model(model: string): boolean {
+  return model.toLowerCase() === 'gemini-nano-banana-2.1'
+}
+
 export function isImageGenModel(model: string): boolean {
-  return IMAGE_MODEL_RE.test(model.toLowerCase())
+  return isNanoBanana21Model(model) || IMAGE_MODEL_RE.test(model.toLowerCase())
 }
 
 // Whether a model accepts non-image document input (PDF/text) as `file` content
@@ -92,6 +96,7 @@ export function isGemini31FlashLiteImageModel(model: string): boolean {
 export function supportsResolution(model: string): boolean {
   const m = model.toLowerCase()
   return (
+    isNanoBanana21Model(m) ||
     isProImageModel(m) ||
     isGemini31FlashImageModel(m) ||
     isGemini31FlashLiteImageModel(m)
@@ -104,13 +109,16 @@ export function supportsResolution(model: string): boolean {
 export function supports4K(model: string): boolean {
   const m = model.toLowerCase()
   if (/flash-lite/.test(m)) return false
-  return isProImageModel(m) || isGemini31FlashImageModel(m)
+  return (
+    isNanoBanana21Model(m) || isProImageModel(m) || isGemini31FlashImageModel(m)
+  )
 }
 
 // Resolution tiers offered for a given Gemini image model. The 3.x generation
 // supports explicit official tiers: Flash has 0.5K/1K/2K/4K, Pro has
 // 1K/2K/4K, and older/lite models fall back to their base output size.
 export function resolutionsForModel(model: string): readonly ImageResolution[] {
+  if (isNanoBanana21Model(model)) return IMAGE_RESOLUTIONS_PRO
   if (isGemini31FlashImageModel(model)) return IMAGE_RESOLUTIONS_FLASH
   if (isProImageModel(model)) return IMAGE_RESOLUTIONS_PRO
   if (isGemini31FlashLiteImageModel(model)) return IMAGE_RESOLUTIONS
@@ -157,6 +165,10 @@ export type ImageResolution = '0.5K' | '1K' | '2K' | '4K'
 // downloadable pictures). 1/2/4 keeps the cost obvious.
 export const IMAGE_COUNTS = [1, 2, 4] as const
 export type ImageCount = (typeof IMAGE_COUNTS)[number]
+
+export function imageCountsForModel(model: string): readonly ImageCount[] {
+  return isNanoBanana21Model(model) ? [1] : IMAGE_COUNTS
+}
 
 export interface ImageGenOptions {
   aspectRatio: AspectRatio

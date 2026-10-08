@@ -22,7 +22,12 @@ import type {
   PlaygroundConfig,
   ParameterEnabled,
 } from '../types'
-import { resolutionsForModel, type ImageResolution } from './image-models'
+import {
+  isImageGenModel,
+  isNanoBanana21Model,
+  resolutionsForModel,
+  type ImageResolution,
+} from './image-models'
 import { formatMessageForAPI, isValidMessage } from './message-utils'
 import { reasoningEffortForModel } from './reasoning-levels'
 
@@ -143,9 +148,7 @@ export const WEB_SEARCH_TOOL: Record<string, unknown> = {
 
 // Image / video generation models take no chat tools.
 function isTextModel(m: string): boolean {
-  return !/image|imagen|veo|sora|gemini-omni-flash|dall|flux|midjourney|stable-?diffusion/.test(
-    m
-  )
+  return !isImageGenModel(m)
 }
 
 // Tells the model to mirror the user's language so non-Chinese users stay
@@ -402,6 +405,7 @@ export function buildChatCompletionPayload(
   // doesn't error out.
   const record = payload as unknown as Record<string, unknown>
   const noSamplingParams =
+    isNanoBanana21Model(config.model) ||
     config.model.trim() === 'gpt-6-astra' ||
     /claude/i.test(config.model) ||
     /\b(gpt-5|gpt5|o\d)\b/i.test(config.model) ||
@@ -410,6 +414,8 @@ export function buildChatCompletionPayload(
     delete record.temperature
     delete record.top_p
   }
+
+  if (isNanoBanana21Model(config.model)) delete record.seed
 
   const reasoningEffort = reasoningEffortForModel(
     config.model,
@@ -451,7 +457,7 @@ export function buildChatCompletionPayload(
       payload.extra_body = { google: { image_config: imageConfig } }
     }
     // Ask for N images at once; the gateway returns them in one reply.
-    if (imageCount && imageCount > 1) {
+    if (imageCount && imageCount > 1 && !isNanoBanana21Model(config.model)) {
       ;(payload as unknown as Record<string, unknown>).n = imageCount
     }
   }
