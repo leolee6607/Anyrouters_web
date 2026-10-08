@@ -1,0 +1,70 @@
+{
+  "runtime_commit": "479fe519ccb9a22b029a203a36eda97ce72b50a1",
+  "build": "cck",
+  "tests": {
+    "go_all": "pass",
+    "go_monthly_race": "pass",
+    "frontend_types": "pass",
+    "changed_files_lint": "pass",
+    "frontend_build": "pass",
+    "frontend_tests": {
+      "passed": 8,
+      "failed": 0,
+      "assertions": 33
+    },
+    "two_axis_review": "fixed all reported findings",
+    "local_ui": "account, monthly amounts, refund/net, channels, year switch, real CSV download verified",
+    "non_admin_api": "denied"
+  },
+  "candidate": {
+    "status": {
+      "http": 200,
+      "success": true
+    },
+    "pricing": {
+      "http": 200,
+      "success": true,
+      "models": 32
+    },
+    "monthly-unauth": {
+      "http": 401,
+      "success": false
+    }
+  },
+  "config_preserved": true,
+  "canary": {
+    "traffic": {
+      "old": 99,
+      "new": 1
+    },
+    "public_status": "pass",
+    "public_pricing": "pass",
+    "candidate_monthly_without_auth": 401,
+    "old_revision_monthly_route": 404
+  },
+  "production": {
+    "revision": "ca-anyrouters-web--user-monthly-479fe519c",
+    "image": "acranyroutersprod.azurecr.io/new-api@sha256:bf91cfb3fe3b3021eb7ba39a855f55b09ca94075b908e249d375feabef73becd",
+    "build": "cck",
+    "runtime_commit": "479fe519ccb9a22b029a203a36eda97ce72b50a1",
+    "traffic_percent": 100,
+    "smoke": {
+      "status": {
+        "http": 200,
+        "success": true
+      },
+      "pricing": {
+        "http": 200,
+        "success": true,
+        "models": 32
+      },
+      "monthly-unauth": {
+        "http": 401,
+        "success": false
+      }
+    },
+    "console_scan": "no panic, fatal, error or Failed entries in sampled candidate logs",
+    "authenticated_ui": "account identity, monthly exact amounts, channel detail and CSV agree with independently aggregated source",
+    "verified_at": "2026-10-08T12:16:49+08:00"
+  }
+}

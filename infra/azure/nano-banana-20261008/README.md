@@ -55,3 +55,11 @@ curl 'https://aiplatform.googleapis.com/v1/projects/anyrouters-prod/locations/gl
 ```
 
 不要继承旧版的 sampling 参数或设置多个候选。Chat 输出图片为 Markdown data URI；Gemini 原生输出为 `inlineData`，原生客户端只展示非 `thought` 的最终图片。
+
+## 最终发布结果
+
+后端生产实测四种成功场景和五种参数拒绝场景；响应 usage、消费日志、令牌余额一致，累计测试 quota 58461，临时测试令牌已禁用并设置过期。模型目录修正随 `479fe519c` 月度消费版本发布：默认分组为 0.5x，详情上下文 131072、最大输出 32768，未证实的数据隐私字段留空。线上实际界面核对通过；32 个现有模型定价、分组与端点配置保持一致。
+
+运行镜像和发布交接见 [用户月度消费发布记录](../user-monthly-20261008/README.md)。本次记录区分后端实测版本与最终界面发布版本，后者没有再次改变模型计费或请求转换。
+
+留痕：[PR #36](https://github.com/leolee6607/Anyrouters_web/pull/36)；[Notion 上架记录](https://app.notion.com/p/3f3680dd2e7e819992d4fb7bc0d65bf8)。

@@ -41,10 +41,18 @@
     "test_quota_including_old_models": 58461
   },
   "catalog_ui": {
-    "status": "local checks passed; release pending",
+    "status": "production verified",
     "regression_tests": 6,
     "types": "pass",
     "lint": "pass",
-    "build": "pass"
+    "build": "pass",
+    "runtime_commit": "479fe519ccb9a22b029a203a36eda97ce72b50a1",
+    "revision": "ca-anyrouters-web--user-monthly-479fe519c",
+    "verified": "default group 0.5x; input 0.75 / output 3.75 / cache 0.075 / image output 15 per 1M; context 131072 and output 32768; unknown privacy not invented"
+  },
+  "temporary_test_token": {
+    "status": "disabled and expired",
+    "quota_verified": 58461,
+    "customer_credentials_unchanged": true
   }
 }

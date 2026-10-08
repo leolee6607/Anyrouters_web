@@ -30,6 +30,7 @@ import {
   ShieldAlert,
   Link2,
   CreditCard,
+  Receipt,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -154,6 +155,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             {t('Edit')}
             <DropdownMenuShortcut>
               <Pencil size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(user)
+              setOpen('monthly-usage')
+            }}
+          >
+            {t('Monthly consumption')}
+            <DropdownMenuShortcut>
+              <Receipt size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
