@@ -10,7 +10,7 @@ describe('monthly consumption display and exports', () => {
     expect(formatUsageUSD('NaN')).toBe('—')
   })
   test('exports original amounts, account and timestamp without spreadsheet formulas', () => {
-    const amounts = { consume_usd: '1.000002', refund_usd: '2', net_usd: '-0.999998', requests: 1, refunds: 1 }
+    const amounts = { consume_usd: '1.000002', refund_usd: '2', net_usd: '-0.999998', consume_records: 1, refunds: 1 }
     const report: UserMonthlyUsage = { user_id: 31, username: '=1+1', display_name: ' @SUM(1)', year: 2026, timezone: 'Asia/Shanghai', currency: 'USD', as_of: 1791430309, total: amounts, months: [{ month: '2026-09', in_progress: false, ...amounts, channels: [{ channel_id: 3, channel_name: 'Azure,"test"\n=2', ...amounts }] }] }
     const csv = monthlyUsageCSV(report)
     expect(csv).toContain('AR000031')

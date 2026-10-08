@@ -27,7 +27,7 @@ export function MonthlyUsageTable(props: { report: UserMonthlyUsage }) {
             <th className='p-3 text-right'>{t('Charges (USD)')}</th>
             <th className='p-3 text-right'>{t('Refunds (USD)')}</th>
             <th className='p-3 text-right'>{t('Net consumption (USD)')}</th>
-            <th className='p-3 text-right'>{t('Requests')}</th>
+            <th className='p-3 text-right'>{t('Consumption records')}</th>
           </tr>
         </thead>
         <tbody>
@@ -73,7 +73,7 @@ export function MonthlyUsageTable(props: { report: UserMonthlyUsage }) {
                   {formatUsageUSD(month.net_usd)}
                 </td>
                 <td className='p-3 text-right tabular-nums'>
-                  {month.requests.toLocaleString()}
+                  {month.consume_records.toLocaleString()}
                 </td>
               </tr>
               {expanded.has(month.month) &&
@@ -93,7 +93,7 @@ export function MonthlyUsageTable(props: { report: UserMonthlyUsage }) {
                       {formatUsageUSD(channel.net_usd)}
                     </td>
                     <td className='p-3 text-right tabular-nums'>
-                      {channel.requests.toLocaleString()}
+                      {channel.consume_records.toLocaleString()}
                     </td>
                   </tr>
                 ))}
@@ -113,7 +113,7 @@ export function MonthlyUsageTable(props: { report: UserMonthlyUsage }) {
               {formatUsageUSD(props.report.total.net_usd)}
             </td>
             <td className='p-3 text-right'>
-              {props.report.total.requests.toLocaleString()}
+              {props.report.total.consume_records.toLocaleString()}
             </td>
           </tr>
         </tfoot>

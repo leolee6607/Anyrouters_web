@@ -51,7 +51,7 @@ func TestUserMonthlyUsageIsolationAndBoundaries(t *testing.T) {
 	require.Equal(t, "0.000002", report.Months[7].NetUSD)
 	sept := report.Months[8]
 	require.Equal(t, "6000.000004", sept.ConsumeUSD)
-	require.EqualValues(t, 3, sept.Requests)
+	require.EqualValues(t, 3, sept.ConsumeRecords)
 	require.Len(t, sept.Channels, 2)
 	require.Equal(t, "Azure fixture", sept.Channels[0].ChannelName)
 	require.Equal(t, 999, sept.Channels[1].ChannelID)
@@ -59,7 +59,7 @@ func TestUserMonthlyUsageIsolationAndBoundaries(t *testing.T) {
 	require.Equal(t, "-0.5", report.Months[9].NetUSD)
 	require.True(t, report.Months[9].InProgress)
 	require.Equal(t, "5999.500006", report.Total.NetUSD)
-	require.EqualValues(t, 4, report.Total.Requests)
+	require.EqualValues(t, 4, report.Total.ConsumeRecords)
 	for _, year := range []int{1999, 2027} {
 		_, err = GetUserMonthlyUsage(context.Background(), 31, year, now)
 		require.Error(t, err)

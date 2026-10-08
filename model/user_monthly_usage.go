@@ -18,11 +18,11 @@ var UsageMonthLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 // UsageAmounts contains historical debits, not repriced tokens or payment receipts.
 // Decimal strings preserve precision in browsers and CSV exports.
 type UsageAmounts struct {
-	ConsumeUSD string `json:"consume_usd"`
-	RefundUSD  string `json:"refund_usd"`
-	NetUSD     string `json:"net_usd"`
-	Requests   int64  `json:"requests"`
-	Refunds    int64  `json:"refunds"`
+	ConsumeUSD     string `json:"consume_usd"`
+	RefundUSD      string `json:"refund_usd"`
+	NetUSD         string `json:"net_usd"`
+	ConsumeRecords int64  `json:"consume_records"`
+	Refunds        int64  `json:"refunds"`
 }
 type UserUsageChannel struct {
 	ChannelID   int    `json:"channel_id"`
@@ -54,13 +54,13 @@ type usageAggregate struct {
 	Count     int64
 	Invalid   int64
 }
-type usageTotals struct{ consume, refund, requests, refunds int64 }
+type usageTotals struct{ consume, refund, consumeRecords, refunds int64 }
 
 func (s *usageTotals) add(r usageAggregate) error {
 	if r.Invalid != 0 || r.Quota < 0 || r.Count < 0 {
 		return errors.New("invalid historical usage amount")
 	}
-	q, n := &s.consume, &s.requests
+	q, n := &s.consume, &s.consumeRecords
 	if r.Type == LogTypeRefund {
 		q, n = &s.refund, &s.refunds
 	}
@@ -73,7 +73,7 @@ func (s *usageTotals) add(r usageAggregate) error {
 }
 func (s usageTotals) amounts(unit decimal.Decimal) UsageAmounts {
 	amount := func(q int64) string { return decimal.NewFromInt(q).Div(unit).String() }
-	return UsageAmounts{ConsumeUSD: amount(s.consume), RefundUSD: amount(s.refund), NetUSD: amount(s.consume - s.refund), Requests: s.requests, Refunds: s.refunds}
+	return UsageAmounts{ConsumeUSD: amount(s.consume), RefundUSD: amount(s.refund), NetUSD: amount(s.consume - s.refund), ConsumeRecords: s.consumeRecords, Refunds: s.refunds}
 }
 
 // GetUserMonthlyUsage makes one bounded aggregate query against LOG_DB. Channel

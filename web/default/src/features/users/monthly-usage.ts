@@ -6,7 +6,7 @@ export interface UsageAmounts {
   consume_usd: string
   refund_usd: string
   net_usd: string
-  requests: number
+  consume_records: number
   refunds: number
 }
 export interface UsageChannel extends UsageAmounts {
@@ -74,7 +74,7 @@ export function monthlyUsageCSV(report: UserMonthlyUsage): string {
     'consume_usd',
     'refund_usd',
     'net_usd',
-    'requests',
+    'consume_records',
     'refunds',
     'timezone',
     'as_of_utc',
@@ -92,7 +92,7 @@ export function monthlyUsageCSV(report: UserMonthlyUsage): string {
         channel.consume_usd,
         channel.refund_usd,
         channel.net_usd,
-        String(channel.requests),
+        String(channel.consume_records),
         String(channel.refunds),
         report.timezone,
         new Date(report.as_of * 1000).toISOString(),
