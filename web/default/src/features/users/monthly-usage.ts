@@ -153,29 +153,33 @@ export function usageBreakdownCSV(
     'as_of_utc',
     'basis',
     'share_basis',
+    'row_kind',
   ]
   const groups = view === 'models' ? selected.models : selected.channels
-  const rows = groups.map((group) => {
+  // Keep account/period/as-of metadata even for a verified zero-usage period.
+  const rows = (groups.length ? groups : [null]).map((group) => {
+    const amounts = group ?? selected
     const cells = [
       formatUserCode(report.user_id),
       report.display_name,
       report.username,
       period === 'year' ? String(report.year) : period,
       view,
-      'model_name' in group ? group.model_name : '',
-      'channel_id' in group ? String(group.channel_id) : '',
-      'channel_name' in group ? group.channel_name : '',
-      group.consume_usd,
-      group.refund_usd,
-      group.net_usd,
-      group.charge_share_percent,
+      group && 'model_name' in group ? group.model_name : '',
+      group && 'channel_id' in group ? String(group.channel_id) : '',
+      group && 'channel_name' in group ? group.channel_name : '',
+      amounts.consume_usd,
+      amounts.refund_usd,
+      amounts.net_usd,
+      group?.charge_share_percent ?? '',
       selected.consume_usd,
-      String(group.consume_records),
-      String(group.refunds),
+      String(amounts.consume_records),
+      String(amounts.refunds),
       report.timezone,
       new Date(report.as_of * 1000).toISOString(),
       'retained_site_consume_and_refund_logs',
       'gross_consumption_before_refunds',
+      group ? 'detail' : 'empty_period',
     ]
     return cells
       .map((value, index) => csvCell(value, index >= 8 && index <= 14))

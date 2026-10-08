@@ -65,6 +65,19 @@ describe('monthly consumption display and exports', () => {
     expect(csv.trim().split('\r\n')).toHaveLength(2)
     expect(usageBreakdownPeriod(report, 'year')?.consume_usd).toBe('4.000002')
   })
+  test('zero usage exports a traceable empty-period row instead of a header-only file', () => {
+    const zero = { consume_usd: '0', refund_usd: '0', net_usd: '0', consume_records: 0, refunds: 0 }
+    const empty: UserMonthlyUsage = { ...report, months: [{ month: '2026-08', in_progress: false, ...zero, models: [], channels: [] }] }
+    for (const view of ['models', 'channels'] as const) {
+      const csv = usageBreakdownCSV(empty, '2026-08', view)
+      expect(csv).toContain('AR000031')
+      expect(csv).toContain('2026-08')
+      expect(csv).toContain('2026-10-08T03:31:49.000Z')
+      expect(csv).toContain('"0","0","0","","0","0","0"')
+      expect(csv).toContain('"empty_period"')
+      expect(csv.trim().split('\r\n')).toHaveLength(2)
+    }
+  })
   test('missing period or old API response cannot export a misleading empty report', () => {
     expect(() => usageBreakdownCSV(report, '2026-08', 'models')).toThrow('Usage breakdown unavailable')
     const olderResponse = { ...report, models: undefined } as unknown as UserMonthlyUsage
