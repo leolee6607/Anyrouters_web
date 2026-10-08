@@ -89,6 +89,9 @@ for ability in abilities:
 apply.append(f'INSERT INTO abilities (`group`,model,channel_id,enabled,priority,weight,tag) SELECT `group`,{sql(model)},channel_id,enabled,priority,weight,tag FROM abilities WHERE channel_id=2 AND model={sql(reference)};')
 apply.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=4) FROM abilities WHERE channel_id=2 AND model={sql(model)} AND enabled=1;')
 rollback.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=4) FROM abilities WHERE channel_id=2 AND model={sql(model)} AND enabled=1 AND priority=0 AND weight=0 AND tag IS NULL;')
+rollback.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=4) FROM abilities WHERE channel_id=2 AND model={sql(model)};')
+for group in prices['groups']:
+    rollback.append(f'INSERT INTO rollout_assert SELECT COUNT(*) FROM abilities WHERE channel_id=2 AND model={sql(model)} AND `group`={sql(group)};')
 rollback.append(f'DELETE FROM abilities WHERE channel_id=2 AND model={sql(model)};')
 
 description = f"Google Nano Banana 2.1；图片生成与编辑，1K/2K/4K，单次一张。按实际 Token 计费：输入 ${prices['input']:.2f}、缓存 ${prices['cached_input']:.2f}、文本/思考输出 ${prices['text_and_thinking_output']:.2f}、图片输出 ${prices['image_output']:.2f} / 百万 Token，另乘分组折扣。支持 Chat 和 Gemini 原生接口。"
