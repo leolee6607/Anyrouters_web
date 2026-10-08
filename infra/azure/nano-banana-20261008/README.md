@@ -8,7 +8,7 @@
 - OpenAI Chat 和原生 Gemini API 都能调用；网页识别为图片模型，支持 1K/2K/4K、图生图和流式，单次一张最终图片。聊天格式省略 Google 返回的 thought 草稿图；原生响应保留完整结构。
 - 新模型不支持 temperature/topP/topK/seed/logprobs、thinkingBudget、0.5K、多候选。用户显式提交时返回 400；网页不自动注入这些不兼容的参数。thinkingLevel 支持 minimal/medium/high。
 - 使用现有表达式计费引擎，按真实输入、缓存、文本/思考输出、图片输出分别计费；不按固定张数估价，不对图片 token 重复收费，不影响旧模型。
-- `prices.json` 保存官方价格和从现有 Gemini 图片模型继承的四个分组折扣。官方定价页 4K 为 3780 image tokens，模型概览为 2520，二者有差异；以 upstream usage 中的实际 image tokens 结算。
+- `prices.json` 保存官方价格和从现有 Gemini 图片模型继承的四个分组折扣。官方最新模型概览与价格说明均列出 4K 为 3780 image tokens；生产 4K 实测同为 3780，以 upstream usage 中的实际 image tokens 结算。
 - Google 返回 IMAGE_RECITATION 时，原生 HTTP 200 中明确标记不收费，代理转换为明确错误并交由已有失败链全额退回预扣，避免空结果收费。
 - 生产验证要对照响应 usage、消费日志、令牌扣费；错误请求无扣费。新模型开放前先验证旧模型；保留旧镜像和受保护配置回退，不修改历史消费。
 
@@ -31,3 +31,27 @@
 - https://ai.google.dev/gemini-api/docs/models/gemini-nano-banana-2.1
 - https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing
 - https://ai.google.dev/gemini-api/docs/pricing
+
+## 调用示例
+
+Ryan 账号对应 `anyrouters-prod`，交接记录与本次上游请求的项目一致。Vertex 使用项目服务账号或具备对应权限的 OAuth access token，不是将邮箱用作 API Key。
+
+站点 OpenAI Chat（`ANYROUTERS_API_KEY` 为用户自己的 Key）：
+
+```bash
+curl https://api.anyrouters.com/v1/chat/completions \
+  -H "Authorization: Bearer $ANYROUTERS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gemini-nano-banana-2.1","messages":[{"role":"user","content":"Create an original gouache illustration of a tiny teal robot watering orange flowers on a curved wooden balcony."}],"reasoning_effort":"minimal","extra_body":{"google":{"image_config":{"image_size":"1K","aspect_ratio":"1:1"}}}}'
+```
+
+Vertex 原生：
+
+```bash
+curl 'https://aiplatform.googleapis.com/v1/projects/anyrouters-prod/locations/global/publishers/google/models/gemini-nano-banana-2.1:generateContent' \
+  -H "Authorization: Bearer $GOOGLE_ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"contents":[{"role":"user","parts":[{"text":"Create an original gouache illustration of a tiny teal robot watering orange flowers on a curved wooden balcony."}]}],"generationConfig":{"responseModalities":["TEXT","IMAGE"],"imageConfig":{"imageSize":"1K","aspectRatio":"1:1"},"thinkingConfig":{"thinkingLevel":"minimal"}}}'
+```
+
+不要继承旧版的 sampling 参数或设置多个候选。Chat 输出图片为 Markdown data URI；Gemini 原生输出为 `inlineData`，原生客户端只展示非 `thought` 的最终图片。
