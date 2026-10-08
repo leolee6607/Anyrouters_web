@@ -119,3 +119,46 @@ func TestNanoBananaDraftImagesAndUsage(t *testing.T) {
 	filterBananaDraftImages("gemini-3.1-flash-image", &response)
 	require.Len(t, response.Candidates[0].Content.Parts, 2)
 }
+
+func TestNanoBananaIncompleteUsageRefunds(t *testing.T) {
+	for _, body := range []string{
+		`{"candidates":[{"content":{"parts":[{"thought":true,"inlineData":{"mimeType":"image/png","data":"DRAFT"}}]}}]}`,
+		`{"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/png","data":"FINAL"}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":40,"candidatesTokenCount":1120,"totalTokenCount":1160}}`,
+	} {
+		t.Run(body, func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest("POST", "/v1/chat/completions", nil)
+			old := constant.StreamingTimeout
+			constant.StreamingTimeout = 300
+			t.Cleanup(func() { constant.StreamingTimeout = old })
+			usage, err := geminiStreamHandler(c, bananaInfo(), &http.Response{Body: io.NopCloser(strings.NewReader("data: " + body + "\n\n"))}, func(_ string, _ *dto.GeminiChatResponse) bool { return true })
+			require.NotNil(t, err)
+			require.Nil(t, usage)
+			require.True(t, types.IsSkipRetryError(err))
+			for _, native := range []bool{true, false} {
+				c, _ = gin.CreateTestContext(httptest.NewRecorder())
+				resp := &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body))}
+				if native {
+					usage, err = GeminiTextGenerationHandler(c, bananaInfo(), resp)
+				} else {
+					usage, err = GeminiChatHandler(c, bananaInfo(), resp)
+				}
+				require.NotNil(t, err)
+				require.Nil(t, usage)
+				require.True(t, types.IsSkipRetryError(err))
+			}
+		})
+	}
+}
+func TestNanoBananaCompleteStreamUsesImageUsage(t *testing.T) {
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	old := constant.StreamingTimeout
+	constant.StreamingTimeout = 300
+	t.Cleanup(func() { constant.StreamingTimeout = old })
+	body := `data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/png","data":"FINAL"}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":40,"candidatesTokenCount":1120,"totalTokenCount":1160,"candidatesTokensDetails":[{"modality":"IMAGE","tokenCount":1120}]}}` + "\n\n"
+	usage, err := geminiStreamHandler(c, bananaInfo(), &http.Response{Body: io.NopCloser(strings.NewReader(body))}, func(_ string, _ *dto.GeminiChatResponse) bool { return true })
+	require.Nil(t, err)
+	require.NotNil(t, usage)
+	require.Equal(t, 1120, usage.CompletionTokenDetails.ImageTokens)
+}

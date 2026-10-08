@@ -42,6 +42,8 @@ header = [
     'CREATE TEMPORARY TABLE rollout_assert (ok INT NOT NULL CHECK(ok=1));',
     'START TRANSACTION;',
     'SELECT id FROM channels WHERE id=2 FOR UPDATE;',
+    f'SELECT id FROM models WHERE model_name={sql(model)} FOR UPDATE;',
+    f'SELECT channel_id FROM abilities WHERE model IN ({sql(model)},{sql(reference)}) FOR UPDATE;',
     "SELECT `key` FROM options WHERE `key` IN ('ModelRatio','CompletionRatio','CacheRatio','GroupModelRatio','ModelPrice','billing_setting.billing_mode','billing_setting.billing_expr','gemini.supported_imagine_models') FOR UPDATE;",
 ]
 apply = list(header)
@@ -89,10 +91,10 @@ apply.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=4) FROM abilities WHE
 rollback.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=4) FROM abilities WHERE channel_id=2 AND model={sql(model)} AND enabled=1 AND priority=0 AND weight=0 AND tag IS NULL;')
 rollback.append(f'DELETE FROM abilities WHERE channel_id=2 AND model={sql(model)};')
 
-description = 'Google Nano Banana 2.1；图片生成与编辑，1K/2K/4K，单次一张。按实际 Token 计费：输入 $1.50、缓存 $0.15、文本/思考输出 $7.50、图片输出 $30.00 / 百万 Token，另乘分组折扣。支持 Chat 和 Gemini 原生接口。'
+description = f"Google Nano Banana 2.1；图片生成与编辑，1K/2K/4K，单次一张。按实际 Token 计费：输入 ${prices['input']:.2f}、缓存 ${prices['cached_input']:.2f}、文本/思考输出 ${prices['text_and_thinking_output']:.2f}、图片输出 ${prices['image_output']:.2f} / 百万 Token，另乘分组折扣。支持 Chat 和 Gemini 原生接口。"
 apply.append(f'INSERT INTO rollout_assert SELECT (COUNT(*)=0) FROM models WHERE model_name={sql(model)} AND deleted_at IS NULL;')
-apply.append(f"INSERT INTO models (model_name,description,icon,tags,vendor_id,endpoints,official_input_price,official_output_price,status,sync_official,created_time,updated_time,name_rule) VALUES ({sql(model)},{sql(description)},'Gemini.Color',{sql('图片生成,图片编辑,按Token计费')},2,{sql(json.dumps(['gemini','openai']))},1.5,7.5,1,0,UNIX_TIMESTAMP(),UNIX_TIMESTAMP(),0);")
-rollback.append(f'INSERT INTO rollout_assert SELECT COUNT(*) FROM models WHERE model_name={sql(model)} AND deleted_at IS NULL AND official_input_price=1.5 AND official_output_price=7.5 AND description={sql(description)};')
+apply.append(f"INSERT INTO models (model_name,description,icon,tags,vendor_id,endpoints,official_input_price,official_output_price,status,sync_official,created_time,updated_time,name_rule) VALUES ({sql(model)},{sql(description)},'Gemini.Color',{sql('图片生成,图片编辑,按Token计费')},2,{sql(json.dumps(['gemini','openai']))},{prices['input']},{prices['text_and_thinking_output']},1,0,UNIX_TIMESTAMP(),UNIX_TIMESTAMP(),0);")
+rollback.append(f'INSERT INTO rollout_assert SELECT COUNT(*) FROM models WHERE model_name={sql(model)} AND deleted_at IS NULL AND official_input_price={prices["input"]} AND official_output_price={prices["text_and_thinking_output"]} AND description={sql(description)} AND icon={sql("Gemini.Color")} AND tags={sql("图片生成,图片编辑,按Token计费")} AND vendor_id=2 AND endpoints={sql(json.dumps(["gemini","openai"]))} AND status=1 AND sync_official=0 AND name_rule=0 AND updated_time=created_time;')
 rollback.append(f'DELETE FROM models WHERE model_name={sql(model)} AND deleted_at IS NULL;')
 for name, lines in [('apply.sql', apply), ('rollback.sql', rollback)]:
     lines += ['COMMIT;', f"SELECT '{name} committed';"]

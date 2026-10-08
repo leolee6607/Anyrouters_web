@@ -100,6 +100,27 @@ func bananaResponseError(model string, response *dto.GeminiChatResponse) *types.
 	return nil
 }
 
+func bananaUsageError(model string, usage *dto.Usage, hasImages bool) *types.NewAPIError {
+	if model == model_setting.GeminiNanoBanana21 && (usage.TotalTokens <= 0 || (hasImages && usage.CompletionTokenDetails.ImageTokens <= 0)) {
+		return types.NewErrorWithStatusCode(errors.New("incomplete image usage from Google; this request is not charged"), types.ErrorCodeBadResponseBody, http.StatusBadGateway, types.ErrOptionWithSkipRetry())
+	}
+	return nil
+}
+
+func bananaFullResponseUsageError(model string, response *dto.GeminiChatResponse) *types.NewAPIError {
+	if model != model_setting.GeminiNanoBanana21 {
+		return nil
+	}
+	hasImages := false
+	for _, candidate := range response.Candidates {
+		for _, part := range candidate.Content.Parts {
+			hasImages = hasImages || (part.InlineData != nil && !part.Thought)
+		}
+	}
+	usage := buildUsageFromGeminiMetadata(response.UsageMetadata, 0)
+	return bananaUsageError(model, &usage, hasImages)
+}
+
 // Draft images marked thought are not final image outputs. Preserve native
 // Gemini responses, but omit these drafts when presenting OpenAI chat content.
 func filterBananaDraftImages(model string, response *dto.GeminiChatResponse) {
