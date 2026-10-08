@@ -5072,6 +5072,20 @@
     "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.": "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.",
     "Consumption records": "Consumption records",
     "Billing year": "Billing year",
-    "Export CSV": "Export CSV"
+    "Export CSV": "Export CSV",
+    "Report view": "Report view",
+    "Monthly statement": "Monthly statement",
+    "By model": "By model",
+    "By channel": "By channel",
+    "Report period": "Report period",
+    "Selected year total": "Selected year total",
+    "Charge share": "Charge share",
+    "Model not recorded": "Model not recorded",
+    "View model and channel consumption": "View model and channel consumption",
+    "Usage breakdown is not available. Please refresh.": "Usage breakdown is not available. Please refresh.",
+    "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.",
+    "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.": "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.",
+    "User consumption statistics": "User consumption statistics",
+    "Totals cover the selected year, not lifetime usage.": "Totals cover the selected year, not lifetime usage."
   }
 }

@@ -9,7 +9,13 @@ export interface UsageAmounts {
   consume_records: number
   refunds: number
 }
-export interface UsageChannel extends UsageAmounts {
+export interface UsageBreakdownAmounts extends UsageAmounts {
+  charge_share_percent: string
+}
+export interface UsageModel extends UsageBreakdownAmounts {
+  model_name: string
+}
+export interface UsageChannel extends UsageBreakdownAmounts {
   channel_id: number
   channel_name: string
 }
@@ -17,6 +23,7 @@ export interface UsageMonth extends UsageAmounts {
   month: string
   in_progress: boolean
   channels: UsageChannel[]
+  models: UsageModel[]
 }
 export interface UserMonthlyUsage {
   user_id: number
@@ -28,6 +35,14 @@ export interface UserMonthlyUsage {
   as_of: number
   months: UsageMonth[]
   total: UsageAmounts
+  channels: UsageChannel[]
+  models: UsageModel[]
+}
+export type UsageView = 'monthly' | 'models' | 'channels'
+export type UsageIdentity = {
+  id: number
+  username: string
+  display_name?: string
 }
 export async function getUserMonthlyUsage(
   userId: number,
@@ -105,13 +120,92 @@ export function monthlyUsageCSV(report: UserMonthlyUsage): string {
   )
   return '\uFEFF' + [header.join(','), ...rows].join('\r\n') + '\r\n'
 }
-export function downloadMonthlyUsage(report: UserMonthlyUsage): void {
+export function usageBreakdownPeriod(report: UserMonthlyUsage, period: string) {
+  if (period === 'year')
+    return { ...report.total, channels: report.channels, models: report.models }
+  return report.months.find((month) => month.month === period)
+}
+export function usageBreakdownCSV(
+  report: UserMonthlyUsage,
+  period: string,
+  view: Exclude<UsageView, 'monthly'>
+): string {
+  const selected = usageBreakdownPeriod(report, period)
+  if (!selected?.models || !selected.channels)
+    throw new Error('Usage breakdown unavailable')
+  const header = [
+    'user_code',
+    'display_name',
+    'username',
+    'period',
+    'dimension',
+    'model_name',
+    'channel_id',
+    'channel_name',
+    'consume_usd',
+    'refund_usd',
+    'net_usd',
+    'charge_share_percent',
+    'period_consume_usd',
+    'consume_records',
+    'refunds',
+    'timezone',
+    'as_of_utc',
+    'basis',
+    'share_basis',
+  ]
+  const groups = view === 'models' ? selected.models : selected.channels
+  const rows = groups.map((group) => {
+    const cells = [
+      formatUserCode(report.user_id),
+      report.display_name,
+      report.username,
+      period === 'year' ? String(report.year) : period,
+      view,
+      'model_name' in group ? group.model_name : '',
+      'channel_id' in group ? String(group.channel_id) : '',
+      'channel_name' in group ? group.channel_name : '',
+      group.consume_usd,
+      group.refund_usd,
+      group.net_usd,
+      group.charge_share_percent,
+      selected.consume_usd,
+      String(group.consume_records),
+      String(group.refunds),
+      report.timezone,
+      new Date(report.as_of * 1000).toISOString(),
+      'retained_site_consume_and_refund_logs',
+      'gross_consumption_before_refunds',
+    ]
+    return cells
+      .map((value, index) => csvCell(value, index >= 8 && index <= 14))
+      .join(',')
+  })
+  return '\uFEFF' + [header.join(','), ...rows].join('\r\n') + '\r\n'
+}
+function downloadCSV(csv: string, filename: string): void {
   const url = URL.createObjectURL(
-    new Blob([monthlyUsageCSV(report)], { type: 'text/csv;charset=utf-8' })
+    new Blob([csv], { type: 'text/csv;charset=utf-8' })
   )
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${formatUserCode(report.user_id)}-${report.year}-site-usage.csv`
+  anchor.download = filename
   anchor.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+export function downloadMonthlyUsage(report: UserMonthlyUsage): void {
+  downloadCSV(
+    monthlyUsageCSV(report),
+    `${formatUserCode(report.user_id)}-${report.year}-site-usage.csv`
+  )
+}
+export function downloadUsageBreakdown(
+  report: UserMonthlyUsage,
+  period: string,
+  view: Exclude<UsageView, 'monthly'>
+): void {
+  downloadCSV(
+    usageBreakdownCSV(report, period, view),
+    `${formatUserCode(report.user_id)}-${period === 'year' ? report.year : period}-${view}.csv`
+  )
 }
