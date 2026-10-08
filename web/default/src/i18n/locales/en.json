@@ -5086,6 +5086,14 @@
     "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.",
     "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.": "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.",
     "User consumption statistics": "User consumption statistics",
-    "Totals follow the selected year and period, not lifetime usage.": "Totals follow the selected year and period, not lifetime usage."
+    "Totals follow the selected year and period, not lifetime usage.": "Totals follow the selected year and period, not lifetime usage.",
+    "Detailed": "Detailed",
+    "Report detail level": "Report detail level",
+    "Consumption source": "Consumption source",
+    "Google / Gemini": "Google / Gemini",
+    "AWS / Bedrock": "AWS / Bedrock",
+    "Other / unclassified channels": "Other / unclassified channels",
+    "Share = charges for this group / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "Share = charges for this group / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.",
+    "Sources follow current channel types. Azure channels are combined; unclassified or deleted channels stay in Other. For individual records, switch to Detailed.": "Sources follow current channel types. Azure channels are combined; unclassified or deleted channels stay in Other. For individual records, switch to Detailed."
   }
 }

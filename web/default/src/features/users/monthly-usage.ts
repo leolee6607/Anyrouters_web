@@ -12,6 +12,9 @@ export interface UsageAmounts {
 export interface UsageBreakdownAmounts extends UsageAmounts {
   charge_share_percent: string
 }
+export interface UsageProvider extends UsageBreakdownAmounts {
+  provider: string
+}
 export interface UsageModel extends UsageBreakdownAmounts {
   model_name: string
 }
@@ -24,6 +27,7 @@ export interface UsageMonth extends UsageAmounts {
   in_progress: boolean
   channels: UsageChannel[]
   models: UsageModel[]
+  providers: UsageProvider[]
 }
 export interface UserMonthlyUsage {
   user_id: number
@@ -37,8 +41,10 @@ export interface UserMonthlyUsage {
   total: UsageAmounts
   channels: UsageChannel[]
   models: UsageModel[]
+  providers: UsageProvider[]
 }
 export type UsageView = 'monthly' | 'models' | 'channels'
+export type UsageBreakdownView = 'models' | 'channels' | 'providers'
 export type UsageIdentity = {
   id: number
   username: string
@@ -139,17 +145,22 @@ export function monthlyUsageCSV(report: UserMonthlyUsage): string {
 }
 export function usageBreakdownPeriod(report: UserMonthlyUsage, period: string) {
   if (period === 'year')
-    return { ...report.total, channels: report.channels, models: report.models }
+    return {
+      ...report.total,
+      channels: report.channels,
+      models: report.models,
+      providers: report.providers,
+    }
   return report.months.find((month) => month.month === period)
 }
 export function usageBreakdownCSV(
   report: UserMonthlyUsage,
   period: string,
-  view: Exclude<UsageView, 'monthly'>
+  view: UsageBreakdownView
 ): string {
   const selected = usageBreakdownPeriod(report, period)
-  if (!selected?.models || !selected.channels)
-    throw new Error('Usage breakdown unavailable')
+  const groups = selected?.[view]
+  if (!selected || !groups) throw new Error('Usage breakdown unavailable')
   const header = [
     'user_code',
     'display_name',
@@ -171,8 +182,8 @@ export function usageBreakdownCSV(
     'basis',
     'share_basis',
     'row_kind',
+    'provider',
   ]
-  const groups = view === 'models' ? selected.models : selected.channels
   // Keep account/period/as-of metadata even for a verified zero-usage period.
   const rows = (groups.length ? groups : [null]).map((group) => {
     const amounts = group ?? selected
@@ -197,6 +208,7 @@ export function usageBreakdownCSV(
       'retained_site_consume_and_refund_logs',
       'gross_consumption_before_refunds',
       group ? 'detail' : 'empty_period',
+      group && 'provider' in group ? group.provider : '',
     ]
     return cells
       .map((value, index) => csvCell(value, index >= 8 && index <= 14))
@@ -223,7 +235,7 @@ export function downloadMonthlyUsage(report: UserMonthlyUsage): void {
 export function downloadUsageBreakdown(
   report: UserMonthlyUsage,
   period: string,
-  view: Exclude<UsageView, 'monthly'>
+  view: UsageBreakdownView
 ): void {
   downloadCSV(
     usageBreakdownCSV(report, period, view),

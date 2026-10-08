@@ -28,6 +28,10 @@ type UsageBreakdownAmounts struct {
 	UsageAmounts
 	ChargeSharePercent string `json:"charge_share_percent"`
 }
+type UserUsageProvider struct {
+	Provider string `json:"provider"`
+	UsageBreakdownAmounts
+}
 type UserUsageModel struct {
 	ModelName string `json:"model_name"`
 	UsageBreakdownAmounts
@@ -38,29 +42,32 @@ type UserUsageChannel struct {
 	UsageBreakdownAmounts
 }
 type UserUsageMonth struct {
-	Month      string             `json:"month"`
-	InProgress bool               `json:"in_progress"`
-	Channels   []UserUsageChannel `json:"channels"`
-	Models     []UserUsageModel   `json:"models"`
+	Month      string              `json:"month"`
+	InProgress bool                `json:"in_progress"`
+	Channels   []UserUsageChannel  `json:"channels"`
+	Models     []UserUsageModel    `json:"models"`
+	Providers  []UserUsageProvider `json:"providers"`
 	UsageAmounts
 }
 type UserMonthlyUsage struct {
-	UserID      int                `json:"user_id"`
-	Username    string             `json:"username"`
-	DisplayName string             `json:"display_name"`
-	Year        int                `json:"year"`
-	Timezone    string             `json:"timezone"`
-	Currency    string             `json:"currency"`
-	AsOf        int64              `json:"as_of"`
-	Months      []UserUsageMonth   `json:"months"`
-	Total       UsageAmounts       `json:"total"`
-	Channels    []UserUsageChannel `json:"channels"`
-	Models      []UserUsageModel   `json:"models"`
+	UserID      int                 `json:"user_id"`
+	Username    string              `json:"username"`
+	DisplayName string              `json:"display_name"`
+	Year        int                 `json:"year"`
+	Timezone    string              `json:"timezone"`
+	Currency    string              `json:"currency"`
+	AsOf        int64               `json:"as_of"`
+	Months      []UserUsageMonth    `json:"months"`
+	Total       UsageAmounts        `json:"total"`
+	Channels    []UserUsageChannel  `json:"channels"`
+	Models      []UserUsageModel    `json:"models"`
+	Providers   []UserUsageProvider `json:"providers"`
 }
 type usageAggregate struct {
 	Month     int
 	ChannelID int
 	ModelName string
+	Provider  string `gorm:"-"`
 	Type      int
 	Quota     int64
 	Count     int64
@@ -102,6 +109,7 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 		Id          int
 		Username    string
 		DisplayName string
+		Type        int
 	}
 	if err := DB.WithContext(ctx).Model(&User{}).Select("id, username, display_name").Where("id = ?", userID).First(&user).Error; err != nil {
 		return nil, err
@@ -139,15 +147,18 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 	var channels []struct {
 		Id   int
 		Name string
+		Type int
 	}
 	if len(ids) > 0 {
-		if err := DB.WithContext(ctx).Model(&Channel{}).Select("id, name").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+		if err := DB.WithContext(ctx).Model(&Channel{}).Select("id, name, type").Where("id IN ?", ids).Find(&channels).Error; err != nil {
 			return nil, err
 		}
 	}
 	names := map[int]string{}
+	providers := map[int]string{}
 	for _, c := range channels {
 		names[c.Id] = c.Name
+		providers[c.Id] = usageProvider(c.Type)
 	}
 	unit := decimal.NewFromFloat(common.QuotaPerUnit)
 	report := &UserMonthlyUsage{UserID: user.Id, Username: user.Username, DisplayName: user.DisplayName, Year: year, Timezone: "Asia/Shanghai", Currency: "USD", AsOf: asOf.Unix(), Months: make([]UserUsageMonth, 0, months)}
@@ -157,6 +168,7 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 		monthly[i] = newUsageBreakdown()
 	}
 	for _, row := range rows {
+		row.Provider = providers[row.ChannelID]
 		if row.Month < 1 || row.Month > months {
 			return nil, errors.New("invalid usage month")
 		}
@@ -172,11 +184,12 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 			Month:        fmt.Sprintf("%04d-%02d", year, i+1),
 			InProgress:   year == now.Year() && i+1 == int(now.Month()),
 			UsageAmounts: group.total.amounts(unit),
-			Channels:     group.channels(unit, names), Models: group.models(unit),
+			Channels:     group.channels(unit, names), Models: group.models(unit), Providers: group.providers(unit),
 		})
 	}
 	report.Total = annual.total.amounts(unit)
 	report.Channels = annual.channels(unit, names)
 	report.Models = annual.models(unit)
+	report.Providers = annual.providers(unit)
 	return report, nil
 }

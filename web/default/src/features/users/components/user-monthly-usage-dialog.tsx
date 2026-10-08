@@ -29,6 +29,8 @@ export function UserMonthlyUsageDialog(props: {
   const [year, setYear] = useState(defaultPeriod.year)
   const [view, setView] = useState<UsageView>(props.initialView ?? 'monthly')
   const [period, setPeriod] = useState(defaultPeriod.period)
+  const [detailed, setDetailed] = useState(false)
+  const activeView = detailed ? view : 'providers'
   const query = useQuery({
     queryKey: ['user-monthly-usage', props.user.id, year],
     queryFn: () => getUserMonthlyUsage(props.user.id, year),
@@ -42,7 +44,7 @@ export function UserMonthlyUsageDialog(props: {
     !!data &&
     !query.isFetching &&
     !query.isError &&
-    (view === 'monthly' || (!!selected?.models && !!selected.channels))
+    (activeView === 'monthly' || !!selected?.[activeView])
   return (
     <Dialog
       open
@@ -60,6 +62,24 @@ export function UserMonthlyUsageDialog(props: {
         </Button>
       }
     >
+      <div className='flex gap-2' aria-label={t('Report detail level')}>
+        <Button
+          size='sm'
+          variant={detailed ? 'outline' : 'default'}
+          aria-pressed={!detailed}
+          onClick={() => setDetailed(false)}
+        >
+          {t('Simple')}
+        </Button>
+        <Button
+          size='sm'
+          variant={detailed ? 'default' : 'outline'}
+          aria-pressed={detailed}
+          onClick={() => setDetailed(true)}
+        >
+          {t('Detailed')}
+        </Button>
+      </div>
       <div className='flex flex-wrap items-center gap-3'>
         <Label htmlFor='usage-year'>{t('Billing year')}</Label>
         <select
@@ -96,8 +116,8 @@ export function UserMonthlyUsageDialog(props: {
           disabled={!canExport}
           onClick={() => {
             if (!data) return
-            if (view === 'monthly') downloadMonthlyUsage(data)
-            else downloadUsageBreakdown(data, period, view)
+            if (activeView === 'monthly') downloadMonthlyUsage(data)
+            else downloadUsageBreakdown(data, period, activeView)
           }}
         >
           {t('Export CSV')}
@@ -130,18 +150,22 @@ export function UserMonthlyUsageDialog(props: {
             )}
           </p>
           <div className='flex flex-wrap items-center gap-3'>
-            <Label htmlFor='usage-view'>{t('Report view')}</Label>
-            <select
-              id='usage-view'
-              className='bg-background rounded-md border px-3 py-2 text-sm'
-              value={view}
-              onChange={(event) => setView(event.target.value as UsageView)}
-            >
-              <option value='monthly'>{t('Monthly statement')}</option>
-              <option value='models'>{t('By model')}</option>
-              <option value='channels'>{t('By channel')}</option>
-            </select>
-            {view !== 'monthly' && (
+            {detailed && (
+              <>
+                <Label htmlFor='usage-view'>{t('Report view')}</Label>
+                <select
+                  id='usage-view'
+                  className='bg-background rounded-md border px-3 py-2 text-sm'
+                  value={view}
+                  onChange={(event) => setView(event.target.value as UsageView)}
+                >
+                  <option value='monthly'>{t('Monthly statement')}</option>
+                  <option value='models'>{t('By model')}</option>
+                  <option value='channels'>{t('By channel')}</option>
+                </select>
+              </>
+            )}
+            {activeView !== 'monthly' && (
               <>
                 <Label htmlFor='usage-period'>{t('Report period')}</Label>
                 <select
@@ -161,10 +185,14 @@ export function UserMonthlyUsageDialog(props: {
               </>
             )}
           </div>
-          {view === 'monthly' ? (
+          {activeView === 'monthly' ? (
             <MonthlyUsageTable key={year} report={data} />
           ) : (
-            <UsageBreakdownTable report={data} period={period} view={view} />
+            <UsageBreakdownTable
+              report={data}
+              period={period}
+              view={activeView}
+            />
           )}
         </>
       )}

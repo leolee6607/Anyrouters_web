@@ -20,10 +20,12 @@ const report: UserMonthlyUsage = {
   user_id: 31, username: '=1+1', display_name: ' @SUM(1)', year: 2026,
   timezone: 'Asia/Shanghai', currency: 'USD', as_of: 1791430309,
   total: annual,
+  providers: [{ provider: "azure", charge_share_percent: "100.00", ...annual }],
   channels: [{ channel_id: 3, channel_name: 'Azure', charge_share_percent: '100.00', ...annual }],
   models: [{ model_name: '=MODEL()', charge_share_percent: '100.00', ...annual }],
   months: [{
     month: '2026-09', in_progress: false, ...september,
+    providers: [{ provider: 'azure', charge_share_percent: '100.00', ...september }],
     channels: [{ channel_id: 3, channel_name: 'Azure,"test"\n=2', charge_share_percent: '100.00', ...september }],
     models: [{ model_name: '=MODEL()', charge_share_percent: '100.00', ...september }],
   }],
@@ -73,8 +75,8 @@ describe('monthly consumption display and exports', () => {
   })
   test('zero usage exports a traceable empty-period row instead of a header-only file', () => {
     const zero = { consume_usd: '0', refund_usd: '0', net_usd: '0', consume_records: 0, refunds: 0 }
-    const empty: UserMonthlyUsage = { ...report, months: [{ month: '2026-08', in_progress: false, ...zero, models: [], channels: [] }] }
-    for (const view of ['models', 'channels'] as const) {
+    const empty: UserMonthlyUsage = { ...report, months: [{ month: '2026-08', in_progress: false, ...zero, models: [], channels: [], providers: [] }] }
+    for (const view of ['models', 'channels', 'providers'] as const) {
       const csv = usageBreakdownCSV(empty, '2026-08', view)
       expect(csv).toContain('AR000031')
       expect(csv).toContain('2026-08')
@@ -83,6 +85,13 @@ describe('monthly consumption display and exports', () => {
       expect(csv).toContain('"empty_period"')
       expect(csv.trim().split('\r\n')).toHaveLength(2)
     }
+  })
+  test('simple source export uses exactly the same month total as the detailed export', () => {
+    const csv = usageBreakdownCSV(report, '2026-09', 'providers')
+    expect(csv).toContain('"2026-09","providers"')
+    expect(csv).toContain('"1.000002","2","-0.999998","100.00","1.000002"')
+    expect(csv).toContain('"detail","azure"')
+    expect(csv).not.toContain('4.000002')
   })
   test('missing period or old API response cannot export a misleading empty report', () => {
     expect(() => usageBreakdownCSV(report, '2026-08', 'models')).toThrow('Usage breakdown unavailable')

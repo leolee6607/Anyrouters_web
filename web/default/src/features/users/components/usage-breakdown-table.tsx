@@ -3,25 +3,36 @@ import {
   formatUsageUSD,
   usageBreakdownPeriod,
   type UserMonthlyUsage,
-  type UsageView,
+  type UsageBreakdownView,
 } from '../monthly-usage'
 
 export function UsageBreakdownTable(props: {
   report: UserMonthlyUsage
   period: string
-  view: Exclude<UsageView, 'monthly'>
+  view: UsageBreakdownView
 }) {
   const { t } = useTranslation()
   const selected = usageBreakdownPeriod(props.report, props.period)
-  if (!selected?.models || !selected.channels) {
+  const rows = selected?.[props.view]
+  if (!selected || !rows) {
     return (
       <p role='alert'>
         {t('Usage breakdown is not available. Please refresh.')}
       </p>
     )
   }
-  const rows = props.view === 'models' ? selected.models : selected.channels
-  const title = props.view === 'models' ? t('By model') : t('By channel')
+  const simple = props.view === 'providers'
+  let title = t('By channel')
+  if (props.view === 'models') title = t('By model')
+  if (simple) title = t('Consumption source')
+  const providerNames: Record<string, string> = {
+    azure: 'Azure',
+    google: t('Google / Gemini'),
+    aws: t('AWS / Bedrock'),
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
+    other: t('Other / unclassified channels'),
+  }
   return (
     <div className='space-y-3'>
       <div className='bg-muted/40 grid grid-cols-1 gap-3 rounded-lg p-4 sm:grid-cols-3'>
@@ -40,7 +51,7 @@ export function UsageBreakdownTable(props: {
       </div>
       <p className='text-muted-foreground text-xs'>
         {t(
-          'Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.'
+          'Share = charges for this group / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.'
         )}
       </p>
       <div className='overflow-x-auto rounded-lg border'>
@@ -51,16 +62,22 @@ export function UsageBreakdownTable(props: {
               <th className='p-3 text-left'>{title}</th>
               <th className='p-3 text-right'>{t('Charges (USD)')}</th>
               <th className='p-3 text-right'>{t('Charge share')}</th>
-              <th className='p-3 text-right'>{t('Refunds (USD)')}</th>
-              <th className='p-3 text-right'>{t('Net consumption (USD)')}</th>
-              <th className='p-3 text-right'>{t('Consumption records')}</th>
+              {!simple && (
+                <>
+                  <th className='p-3 text-right'>{t('Refunds (USD)')}</th>
+                  <th className='p-3 text-right'>
+                    {t('Net consumption (USD)')}
+                  </th>
+                  <th className='p-3 text-right'>{t('Consumption records')}</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={simple ? 3 : 6}
                   className='text-muted-foreground p-6 text-center'
                 >
                   {t('No consumption records')}
@@ -68,12 +85,18 @@ export function UsageBreakdownTable(props: {
               </tr>
             )}
             {rows.map((row) => {
-              const key =
-                'model_name' in row ? row.model_name : String(row.channel_id)
-              const name =
-                'model_name' in row
-                  ? row.model_name || t('Model not recorded')
-                  : `#${row.channel_id} · ${row.channel_name || t('Unnamed or deleted channel')}`
+              let key: string
+              let name: string
+              if ('model_name' in row) {
+                key = row.model_name
+                name = row.model_name || t('Model not recorded')
+              } else if ('channel_id' in row) {
+                key = String(row.channel_id)
+                name = `#${row.channel_id} · ${row.channel_name || t('Unnamed or deleted channel')}`
+              } else {
+                key = row.provider
+                name = providerNames[row.provider] || row.provider
+              }
               return (
                 <tr key={key} className='border-t'>
                   <td className='max-w-72 min-w-44 p-3 break-words'>{name}</td>
@@ -85,26 +108,39 @@ export function UsageBreakdownTable(props: {
                       ? `${row.charge_share_percent}%`
                       : '—'}
                   </td>
-                  <td className='p-3 text-right font-mono whitespace-nowrap tabular-nums'>
-                    {formatUsageUSD(row.refund_usd)}
-                  </td>
-                  <td className='p-3 text-right font-mono whitespace-nowrap tabular-nums'>
-                    {formatUsageUSD(row.net_usd)}
-                  </td>
-                  <td className='p-3 text-right tabular-nums'>
-                    {row.consume_records.toLocaleString()}
-                  </td>
+                  {!simple && (
+                    <>
+                      <td className='p-3 text-right font-mono whitespace-nowrap tabular-nums'>
+                        {formatUsageUSD(row.refund_usd)}
+                      </td>
+                      <td className='p-3 text-right font-mono whitespace-nowrap tabular-nums'>
+                        {formatUsageUSD(row.net_usd)}
+                      </td>
+                      <td className='p-3 text-right tabular-nums'>
+                        {row.consume_records.toLocaleString()}
+                      </td>
+                    </>
+                  )}
                 </tr>
               )
             })}
           </tbody>
         </table>
       </div>
-      <p className='text-muted-foreground text-xs'>
-        {t(
-          'Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.'
-        )}
-      </p>
+      {props.view === 'models' && (
+        <p className='text-muted-foreground text-xs'>
+          {t(
+            'Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.'
+          )}
+        </p>
+      )}
+      {simple && (
+        <p className='text-muted-foreground text-xs'>
+          {t(
+            'Sources follow current channel types. Azure channels are combined; unclassified or deleted channels stay in Other. For individual records, switch to Detailed.'
+          )}
+        </p>
+      )}
     </div>
   )
 }

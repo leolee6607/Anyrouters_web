@@ -3,19 +3,21 @@ package model
 import (
 	"sort"
 
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/shopspring/decimal"
 )
 
 // Each row contributes once to the total and once to each independent dimension.
 // Model names are historical log values, including empty names on older refunds.
 type usageBreakdown struct {
-	total     usageTotals
-	byChannel map[int]*usageTotals
-	byModel   map[string]*usageTotals
+	total      usageTotals
+	byChannel  map[int]*usageTotals
+	byModel    map[string]*usageTotals
+	byProvider map[string]*usageTotals
 }
 
 func newUsageBreakdown() *usageBreakdown {
-	return &usageBreakdown{byChannel: map[int]*usageTotals{}, byModel: map[string]*usageTotals{}}
+	return &usageBreakdown{byChannel: map[int]*usageTotals{}, byModel: map[string]*usageTotals{}, byProvider: map[string]*usageTotals{}}
 }
 func (b *usageBreakdown) add(row usageAggregate) error {
 	if b.byChannel[row.ChannelID] == nil {
@@ -24,7 +26,13 @@ func (b *usageBreakdown) add(row usageAggregate) error {
 	if b.byModel[row.ModelName] == nil {
 		b.byModel[row.ModelName] = &usageTotals{}
 	}
-	for _, total := range []*usageTotals{&b.total, b.byChannel[row.ChannelID], b.byModel[row.ModelName]} {
+	if row.Provider == "" {
+		row.Provider = "other"
+	}
+	if b.byProvider[row.Provider] == nil {
+		b.byProvider[row.Provider] = &usageTotals{}
+	}
+	for _, total := range []*usageTotals{&b.total, b.byChannel[row.ChannelID], b.byModel[row.ModelName], b.byProvider[row.Provider]} {
 		if err := total.add(row); err != nil {
 			return err
 		}
@@ -65,6 +73,34 @@ func (b *usageBreakdown) models(unit decimal.Decimal) []UserUsageModel {
 	})
 	for _, name := range names {
 		out = append(out, UserUsageModel{ModelName: name, UsageBreakdownAmounts: b.byModel[name].breakdownAmounts(unit, b.total.consume)})
+	}
+	return out
+}
+
+// Source groups describe current channel configuration, not model families or cloud invoices.
+// Deleted/unrecognised channels remain in Other, so no billed usage disappears.
+func usageProvider(channelType int) string {
+	switch channelType {
+	case constant.ChannelTypeAzure:
+		return "azure"
+	case constant.ChannelTypeGemini, constant.ChannelTypeVertexAi, constant.ChannelTypePaLM:
+		return "google"
+	case constant.ChannelTypeAws:
+		return "aws"
+	case constant.ChannelTypeAnthropic:
+		return "anthropic"
+	case constant.ChannelTypeOpenAI, constant.ChannelTypeOpenAIMax:
+		return "openai"
+	default:
+		return "other"
+	}
+}
+func (b *usageBreakdown) providers(unit decimal.Decimal) []UserUsageProvider {
+	out := make([]UserUsageProvider, 0, len(b.byProvider))
+	for _, provider := range []string{"azure", "google", "aws", "anthropic", "openai", "other"} {
+		if total := b.byProvider[provider]; total != nil {
+			out = append(out, UserUsageProvider{Provider: provider, UsageBreakdownAmounts: total.breakdownAmounts(unit, b.total.consume)})
+		}
 	}
 	return out
 }
