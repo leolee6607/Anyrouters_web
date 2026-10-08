@@ -24,6 +24,7 @@ export function UserMonthlyUsageDialog(props: {
     queryKey: ['user-monthly-usage', props.user.id, year],
     queryFn: () => getUserMonthlyUsage(props.user.id, year),
     staleTime: 0,
+    gcTime: 0,
     retry: false,
   })
   const data = query.data
