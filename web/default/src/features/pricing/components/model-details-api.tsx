@@ -732,6 +732,19 @@ function RateLimitsSection(props: { model: PricingModel }) {
 export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
   const { t } = useTranslation()
   const info = useMemo(() => inferApiInfo(props.model), [props.model])
+  let retentionLabel = '—'
+  if (info.data_retention_days !== null) {
+    retentionLabel =
+      info.data_retention_days === 0
+        ? t('Zero retention')
+        : `${info.data_retention_days} ${t('days')}`
+  }
+  let trainingLabel = '—'
+  if (info.training_opt_out !== null) {
+    trainingLabel = info.training_opt_out
+      ? t('Not used for upstream training by default')
+      : t('May be used for training by upstream provider')
+  }
 
   return (
     <section>
@@ -795,15 +808,9 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
         </InfoCell>
 
         <InfoCell label={t('Data retention')}>
-          <span className='text-sm'>
-            {info.data_retention_days === 0
-              ? t('Zero retention')
-              : `${info.data_retention_days} ${t('days')}`}
-          </span>
+          <span className='text-sm'>{retentionLabel}</span>
           <span className='text-muted-foreground text-[10px]'>
-            {info.training_opt_out
-              ? t('Not used for upstream training by default')
-              : t('May be used for training by upstream provider')}
+            {trainingLabel}
           </span>
         </InfoCell>
       </div>

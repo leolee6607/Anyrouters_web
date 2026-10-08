@@ -1,0 +1,50 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "source_commit": "602739263",
+  "go_all": "pass",
+  "go_race_gemini_service_NanoBanana": "pass",
+  "frontend_types": "pass",
+  "frontend_lint": "pass",
+  "frontend_build": "pass",
+  "frontend_tests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "review": {
+    "spec": "P1 incomplete usage and P2 rollback guards fixed",
+    "standards": "pass after fixes"
+  },
+  "db_dry_run": "rolled back successfully",
+  "upstream_probe": {
+    "http": 200,
+    "mime": "image/png",
+    "prompt_tokens": 40,
+    "image_output_tokens": 1120
+  },
+  "production": {
+    "revision": "ca-anyrouters-web--banana-602739263c",
+    "image_digest": "sha256:a56605f7aee1f324d7f79f2ae38d4a6285ddd8186907c6ef66c51425d94db47b",
+    "valid_scenarios": [
+      "1K chat",
+      "2K native",
+      "4K streaming",
+      "image edit"
+    ],
+    "invalid_scenarios": [
+      "temperature=0",
+      "n=2",
+      "0.5K",
+      "thinkingBudget=0",
+      "images/generations"
+    ],
+    "billing": "response usage, recorded quota, token balance agree; invalid requests have no consume log",
+    "test_quota_including_old_models": 58461
+  },
+  "catalog_ui": {
+    "status": "local checks passed; release pending",
+    "regression_tests": 6,
+    "types": "pass",
+    "lint": "pass",
+    "build": "pass"
+  }
+}
