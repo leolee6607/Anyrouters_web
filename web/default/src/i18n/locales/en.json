@@ -5086,6 +5086,6 @@
     "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.",
     "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.": "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.",
     "User consumption statistics": "User consumption statistics",
-    "Totals cover the selected year, not lifetime usage.": "Totals cover the selected year, not lifetime usage."
+    "Totals follow the selected year and period, not lifetime usage.": "Totals follow the selected year and period, not lifetime usage."
   }
 }

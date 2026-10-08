@@ -5061,6 +5061,6 @@
     "Share = charges for this model or channel / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "扣费占比 = 此模型或渠道的扣费 ÷ 所选周期全部扣费（退款前）。占比独立四舍五入，合计可能有误差；无扣费时显示 —。",
     "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.": "模型名称来自历史日志。消费记录数包含补扣记录，不等同于 API 调用次数。",
     "User consumption statistics": "用户消费统计",
-    "Totals cover the selected year, not lifetime usage.": "合计仅含所选年份，不代表账号全部历史消费。"
+    "Totals follow the selected year and period, not lifetime usage.": "合计范围以所选年份和周期为准，不代表账号全部历史消费。"
   }
 }

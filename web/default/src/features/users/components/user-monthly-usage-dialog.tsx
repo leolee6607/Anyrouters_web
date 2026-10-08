@@ -125,7 +125,9 @@ export function UserMonthlyUsageDialog(props: {
             })}
           </p>
           <p className='text-muted-foreground text-xs'>
-            {t('Totals cover the selected year, not lifetime usage.')}
+            {t(
+              'Totals follow the selected year and period, not lifetime usage.'
+            )}
           </p>
           <div className='flex flex-wrap items-center gap-3'>
             <Label htmlFor='usage-view'>{t('Report view')}</Label>
