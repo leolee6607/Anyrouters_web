@@ -3805,7 +3805,7 @@
     "Significant outages detected": "检测到较为严重的故障",
     "Signing you in with {{provider}}": "正在使用 {{provider}} 登录",
     "SiliconFlow": "SiliconFlow",
-    "Simple": "简版",
+    "Simple": "简洁",
     "Simple mode only returns message; status code and error type use system defaults.": "简洁模式仅返回 message；状态码和错误类型将使用系统默认值。",
     "Simple mode: prune objects by type, e.g. redacted_thinking.": "简洁模式：按 type 全量清理对象，例如 redacted_thinking。",
     "Single Key": "单密钥",
@@ -5062,13 +5062,14 @@
     "Model names come from historical logs. Consumption record counts include supplemental charges and are not API call counts.": "模型名称来自历史日志。消费记录数包含补扣记录，不等同于 API 调用次数。",
     "User consumption statistics": "用户消费统计",
     "Totals follow the selected year and period, not lifetime usage.": "合计范围以所选年份和周期为准，不代表账号全部历史消费。",
-    "Detailed": "详细版",
     "Report detail level": "报表详细程度",
     "Consumption source": "消费来源",
     "Google / Gemini": "谷歌 / Gemini",
     "AWS / Bedrock": "AWS / Bedrock",
     "Other / unclassified channels": "其他 / 未识别渠道",
     "Share = charges for this group / all charges in the selected period, before refunds. Percentages are rounded separately; — means no charges.": "扣费占比 = 此分组扣费 ÷ 所选周期全部扣费（退款前）。占比独立四舍五入，合计可能有误差；无扣费时显示 —。",
-    "Sources follow current channel types. Azure channels are combined; unclassified or deleted channels stay in Other. For individual records, switch to Detailed.": "消费来源按当前渠道类型归类；多个 Azure 渠道合并显示，未识别或已删除渠道保留在“其他”中。模型和渠道明细可切换到详细版查看。"
+    "Sources follow current channel types. Azure channels are combined; unclassified or deleted channels stay in Other. For individual records, switch to Detailed.": "消费来源按当前渠道类型归类；多个 Azure 渠道合并显示，未识别或已删除渠道保留在“其他”中。模型和渠道明细可切换到详细版查看。",
+    "Simple report": "简版",
+    "Detailed report": "详细版"
   }
 }

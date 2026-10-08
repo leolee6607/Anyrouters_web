@@ -69,7 +69,7 @@ export function UserMonthlyUsageDialog(props: {
           aria-pressed={!detailed}
           onClick={() => setDetailed(false)}
         >
-          {t('Simple')}
+          {t('Simple report')}
         </Button>
         <Button
           size='sm'
@@ -77,7 +77,7 @@ export function UserMonthlyUsageDialog(props: {
           aria-pressed={detailed}
           onClick={() => setDetailed(true)}
         >
-          {t('Detailed')}
+          {t('Detailed report')}
         </Button>
       </div>
       <div className='flex flex-wrap items-center gap-3'>
