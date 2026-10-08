@@ -16,15 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { formatQuota, formatCompactNumber } from '@/lib/format'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Dialog } from '@/components/dialog'
+import { UserMonthlyUsageDialog } from '@/features/users/components/user-monthly-usage-dialog'
 import { getUserInfo } from '../../api'
-import type { UserInfo } from '../../types'
 
 interface UserInfoDialogProps {
   userId: number | null
@@ -32,59 +33,67 @@ interface UserInfoDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function UserInfoDialog({
-  userId,
-  open,
-  onOpenChange,
-}: UserInfoDialogProps) {
+export function UserInfoDialog(props: UserInfoDialogProps) {
+  if (!props.open || !props.userId) return null
+  return (
+    <UserInfoContent
+      key={props.userId}
+      userId={props.userId}
+      onClose={() => props.onOpenChange(false)}
+    />
+  )
+}
+
+const InfoItem = ({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) => (
+  <div className='space-y-1.5'>
+    <Label className='text-muted-foreground text-xs'>{label}</Label>
+    <div className='text-sm font-semibold'>{value}</div>
+  </div>
+)
+
+function UserInfoContent(props: { userId: number; onClose: () => void }) {
   const { t } = useTranslation()
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const fetchUserInfo = useCallback(
-    async (id: number) => {
-      setIsLoading(true)
-      try {
-        const result = await getUserInfo(id)
-        if (result.success) {
-          setUserInfo(result.data || null)
-        } else {
-          toast.error(result.message || t('Failed to fetch user information'))
-        }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to fetch user info:', error)
-        toast.error(t('Failed to fetch user information'))
-      } finally {
-        setIsLoading(false)
-      }
+  const [showUsage, setShowUsage] = useState(false)
+  const query = useQuery({
+    queryKey: ['admin-user-info', props.userId],
+    queryFn: async () => {
+      const result = await getUserInfo(props.userId)
+      if (!result.success || !result.data)
+        throw new Error('Unable to load user information')
+      return result.data
     },
-    [t]
-  )
-
-  useEffect(() => {
-    if (open && userId) {
-      fetchUserInfo(userId)
-    }
-  }, [open, userId, fetchUserInfo])
-
-  const InfoItem = ({
-    label,
-    value,
-  }: {
-    label: string
-    value: string | number
-  }) => (
-    <div className='space-y-1.5'>
-      <Label className='text-muted-foreground text-xs'>{label}</Label>
-      <div className='text-sm font-semibold'>{value}</div>
-    </div>
-  )
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    enabled: !showUsage,
+  })
+  const userInfo = query.data
+  if (showUsage && userInfo) {
+    return (
+      <UserMonthlyUsageDialog
+        user={{
+          id: props.userId,
+          username: userInfo.username,
+          display_name: userInfo.display_name,
+        }}
+        initialView='models'
+        onClose={props.onClose}
+      />
+    )
+  }
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
+      open
+      onOpenChange={(open) => {
+        if (!open) props.onClose()
+      }}
       title={t('User Information')}
       description={t(
         'View detailed information about this user including balance, usage statistics, and invitation details.'
@@ -93,12 +102,19 @@ export function UserInfoDialog({
       contentHeight='auto'
       bodyClassName='space-y-4'
     >
-      {isLoading ? (
+      {query.isPending ? (
         <div className='flex items-center justify-center py-8'>
           <Loader2 className='text-muted-foreground size-6 animate-spin' />
         </div>
-      ) : userInfo ? (
+      ) : userInfo && !query.isError ? (
         <div className='space-y-4 py-4'>
+          <Button
+            variant='outline'
+            className='w-full'
+            onClick={() => setShowUsage(true)}
+          >
+            {t('View model and channel consumption')}
+          </Button>
           {/* Basic Info */}
           <div className='grid grid-cols-2 gap-4'>
             <InfoItem label={t('Username')} value={userInfo.username} />
@@ -176,7 +192,16 @@ export function UserInfoDialog({
         </div>
       ) : (
         <div className='text-muted-foreground py-8 text-center text-sm'>
-          {t('No user information available')}
+          {t('Failed to fetch user information')}
+          <Button
+            variant='outline'
+            className='ml-3'
+            onClick={() => {
+              void query.refetch()
+            }}
+          >
+            {t('Retry')}
+          </Button>
         </div>
       )}
     </Dialog>

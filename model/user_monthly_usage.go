@@ -24,31 +24,50 @@ type UsageAmounts struct {
 	ConsumeRecords int64  `json:"consume_records"`
 	Refunds        int64  `json:"refunds"`
 }
+type UsageBreakdownAmounts struct {
+	UsageAmounts
+	ChargeSharePercent string `json:"charge_share_percent"`
+}
+type UserUsageProvider struct {
+	Provider string `json:"provider"`
+	UsageBreakdownAmounts
+}
+type UserUsageModel struct {
+	ModelName string `json:"model_name"`
+	UsageBreakdownAmounts
+}
 type UserUsageChannel struct {
 	ChannelID   int    `json:"channel_id"`
 	ChannelName string `json:"channel_name"`
-	UsageAmounts
+	UsageBreakdownAmounts
 }
 type UserUsageMonth struct {
-	Month      string             `json:"month"`
-	InProgress bool               `json:"in_progress"`
-	Channels   []UserUsageChannel `json:"channels"`
+	Month      string              `json:"month"`
+	InProgress bool                `json:"in_progress"`
+	Channels   []UserUsageChannel  `json:"channels"`
+	Models     []UserUsageModel    `json:"models"`
+	Providers  []UserUsageProvider `json:"providers"`
 	UsageAmounts
 }
 type UserMonthlyUsage struct {
-	UserID      int              `json:"user_id"`
-	Username    string           `json:"username"`
-	DisplayName string           `json:"display_name"`
-	Year        int              `json:"year"`
-	Timezone    string           `json:"timezone"`
-	Currency    string           `json:"currency"`
-	AsOf        int64            `json:"as_of"`
-	Months      []UserUsageMonth `json:"months"`
-	Total       UsageAmounts     `json:"total"`
+	UserID      int                 `json:"user_id"`
+	Username    string              `json:"username"`
+	DisplayName string              `json:"display_name"`
+	Year        int                 `json:"year"`
+	Timezone    string              `json:"timezone"`
+	Currency    string              `json:"currency"`
+	AsOf        int64               `json:"as_of"`
+	Months      []UserUsageMonth    `json:"months"`
+	Total       UsageAmounts        `json:"total"`
+	Channels    []UserUsageChannel  `json:"channels"`
+	Models      []UserUsageModel    `json:"models"`
+	Providers   []UserUsageProvider `json:"providers"`
 }
 type usageAggregate struct {
 	Month     int
 	ChannelID int
+	ModelName string
+	Provider  string `gorm:"-"`
 	Type      int
 	Quota     int64
 	Count     int64
@@ -90,6 +109,7 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 		Id          int
 		Username    string
 		DisplayName string
+		Type        int
 	}
 	if err := DB.WithContext(ctx).Model(&User{}).Select("id, username, display_name").Where("id = ?", userID).First(&user).Error; err != nil {
 		return nil, err
@@ -110,9 +130,9 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 		clauses = append(clauses, "WHEN created_at < ? THEN ?")
 		args = append(args, upper, m)
 	}
-	selector := "CASE " + strings.Join(clauses, " ") + " END AS month, channel_id, type, SUM(quota) AS quota, COUNT(*) AS count, SUM(CASE WHEN quota < 0 THEN 1 ELSE 0 END) AS invalid"
+	selector := "CASE " + strings.Join(clauses, " ") + " END AS month, channel_id, COALESCE(model_name, '') AS model_name, type, SUM(quota) AS quota, COUNT(*) AS count, SUM(CASE WHEN quota < 0 THEN 1 ELSE 0 END) AS invalid"
 	var rows []usageAggregate
-	err := LOG_DB.WithContext(ctx).Model(&Log{}).Select(selector, args...).Where("user_id = ? AND created_at >= ? AND created_at < ? AND type IN ?", userID, start.Unix(), end.Unix(), []int{LogTypeConsume, LogTypeRefund}).Group("month, channel_id, type").Order("month, channel_id, type").Scan(&rows).Error
+	err := LOG_DB.WithContext(ctx).Model(&Log{}).Select(selector, args...).Where("user_id = ? AND created_at >= ? AND created_at < ? AND type IN ?", userID, start.Unix(), end.Unix(), []int{LogTypeConsume, LogTypeRefund}).Group("month, channel_id, model_name, type").Order("month, channel_id, model_name, type").Scan(&rows).Error
 	if err != nil {
 		return nil, err
 	}
@@ -127,44 +147,49 @@ func GetUserMonthlyUsage(ctx context.Context, userID, year int, asOf time.Time) 
 	var channels []struct {
 		Id   int
 		Name string
+		Type int
 	}
 	if len(ids) > 0 {
-		if err := DB.WithContext(ctx).Model(&Channel{}).Select("id, name").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+		if err := DB.WithContext(ctx).Model(&Channel{}).Select("id, name, type").Where("id IN ?", ids).Find(&channels).Error; err != nil {
 			return nil, err
 		}
 	}
 	names := map[int]string{}
+	providers := map[int]string{}
 	for _, c := range channels {
 		names[c.Id] = c.Name
+		providers[c.Id] = usageProvider(c.Type)
 	}
 	unit := decimal.NewFromFloat(common.QuotaPerUnit)
 	report := &UserMonthlyUsage{UserID: user.Id, Username: user.Username, DisplayName: user.DisplayName, Year: year, Timezone: "Asia/Shanghai", Currency: "USD", AsOf: asOf.Unix(), Months: make([]UserUsageMonth, 0, months)}
-	var total usageTotals
-	for m := 1; m <= months; m++ {
-		month := UserUsageMonth{Month: fmt.Sprintf("%04d-%02d", year, m), InProgress: year == now.Year() && m == int(now.Month()), Channels: []UserUsageChannel{}}
-		var subtotal usageTotals
-		group := map[int]*usageTotals{}
-		channelOrder := []int{}
-		for _, r := range rows {
-			if r.Month != m {
-				continue
-			}
-			if group[r.ChannelID] == nil {
-				group[r.ChannelID] = &usageTotals{}
-				channelOrder = append(channelOrder, r.ChannelID)
-			}
-			for _, s := range []*usageTotals{&total, &subtotal, group[r.ChannelID]} {
-				if err := s.add(r); err != nil {
-					return nil, err
-				}
-			}
-		}
-		for _, id := range channelOrder {
-			month.Channels = append(month.Channels, UserUsageChannel{ChannelID: id, ChannelName: names[id], UsageAmounts: group[id].amounts(unit)})
-		}
-		month.UsageAmounts = subtotal.amounts(unit)
-		report.Months = append(report.Months, month)
+	annual := newUsageBreakdown()
+	monthly := make([]*usageBreakdown, months)
+	for i := range monthly {
+		monthly[i] = newUsageBreakdown()
 	}
-	report.Total = total.amounts(unit)
+	for _, row := range rows {
+		row.Provider = providers[row.ChannelID]
+		if row.Month < 1 || row.Month > months {
+			return nil, errors.New("invalid usage month")
+		}
+		if err := annual.add(row); err != nil {
+			return nil, err
+		}
+		if err := monthly[row.Month-1].add(row); err != nil {
+			return nil, err
+		}
+	}
+	for i, group := range monthly {
+		report.Months = append(report.Months, UserUsageMonth{
+			Month:        fmt.Sprintf("%04d-%02d", year, i+1),
+			InProgress:   year == now.Year() && i+1 == int(now.Month()),
+			UsageAmounts: group.total.amounts(unit),
+			Channels:     group.channels(unit, names), Models: group.models(unit), Providers: group.providers(unit),
+		})
+	}
+	report.Total = annual.total.amounts(unit)
+	report.Channels = annual.channels(unit, names)
+	report.Models = annual.models(unit)
+	report.Providers = annual.providers(unit)
 	return report, nil
 }

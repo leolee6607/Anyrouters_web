@@ -7,19 +7,30 @@ import { Label } from '@/components/ui/label'
 import { Dialog } from '@/components/dialog'
 import {
   currentUsageYear,
+  previousUsageMonth,
   downloadMonthlyUsage,
+  downloadUsageBreakdown,
+  usageBreakdownPeriod,
+  type UsageIdentity,
+  type UsageView,
   getUserMonthlyUsage,
 } from '../monthly-usage'
-import type { User } from '../types'
 import { MonthlyUsageTable } from './monthly-usage-table'
+import { UsageBreakdownTable } from './usage-breakdown-table'
 
 export function UserMonthlyUsageDialog(props: {
-  user: User
+  user: UsageIdentity
+  initialView?: UsageView
   onClose: () => void
 }) {
   const { t, i18n } = useTranslation()
   const currentYear = currentUsageYear()
-  const [year, setYear] = useState(currentYear)
+  const defaultPeriod = previousUsageMonth()
+  const [year, setYear] = useState(defaultPeriod.year)
+  const [view, setView] = useState<UsageView>(props.initialView ?? 'monthly')
+  const [period, setPeriod] = useState(defaultPeriod.period)
+  const [detailed, setDetailed] = useState(false)
+  const activeView = detailed ? view : 'providers'
   const query = useQuery({
     queryKey: ['user-monthly-usage', props.user.id, year],
     queryFn: () => getUserMonthlyUsage(props.user.id, year),
@@ -28,13 +39,19 @@ export function UserMonthlyUsageDialog(props: {
     retry: false,
   })
   const data = query.data
+  const selected = data ? usageBreakdownPeriod(data, period) : undefined
+  const canExport =
+    !!data &&
+    !query.isFetching &&
+    !query.isError &&
+    (activeView === 'monthly' || !!selected?.[activeView])
   return (
     <Dialog
       open
       onOpenChange={(open) => {
         if (!open) props.onClose()
       }}
-      title={t('Monthly website consumption')}
+      title={t('User consumption statistics')}
       description={`${formatUserCode(props.user.id)} · ${props.user.display_name || props.user.username} · ${props.user.username}`}
       contentClassName='sm:max-w-5xl'
       contentHeight='auto'
@@ -45,13 +62,34 @@ export function UserMonthlyUsageDialog(props: {
         </Button>
       }
     >
+      <div className='flex gap-2' aria-label={t('Report detail level')}>
+        <Button
+          size='sm'
+          variant={detailed ? 'outline' : 'default'}
+          aria-pressed={!detailed}
+          onClick={() => setDetailed(false)}
+        >
+          {t('Simple report')}
+        </Button>
+        <Button
+          size='sm'
+          variant={detailed ? 'default' : 'outline'}
+          aria-pressed={detailed}
+          onClick={() => setDetailed(true)}
+        >
+          {t('Detailed report')}
+        </Button>
+      </div>
       <div className='flex flex-wrap items-center gap-3'>
         <Label htmlFor='usage-year'>{t('Billing year')}</Label>
         <select
           id='usage-year'
           className='bg-background rounded-md border px-3 py-2 text-sm'
           value={year}
-          onChange={(event) => setYear(Number(event.target.value))}
+          onChange={(event) => {
+            setYear(Number(event.target.value))
+            setPeriod('year')
+          }}
         >
           {Array.from(
             { length: currentYear - 1999 },
@@ -75,9 +113,11 @@ export function UserMonthlyUsageDialog(props: {
         <Button
           variant='outline'
           size='sm'
-          disabled={!data || query.isFetching || query.isError}
+          disabled={!canExport}
           onClick={() => {
-            if (data) downloadMonthlyUsage(data)
+            if (!data) return
+            if (activeView === 'monthly') downloadMonthlyUsage(data)
+            else downloadUsageBreakdown(data, period, activeView)
           }}
         >
           {t('Export CSV')}
@@ -104,7 +144,56 @@ export function UserMonthlyUsageDialog(props: {
               }),
             })}
           </p>
-          <MonthlyUsageTable report={data} />
+          <p className='text-muted-foreground text-xs'>
+            {t(
+              'Totals follow the selected year and period, not lifetime usage.'
+            )}
+          </p>
+          <div className='flex flex-wrap items-center gap-3'>
+            {detailed && (
+              <>
+                <Label htmlFor='usage-view'>{t('Report view')}</Label>
+                <select
+                  id='usage-view'
+                  className='bg-background rounded-md border px-3 py-2 text-sm'
+                  value={view}
+                  onChange={(event) => setView(event.target.value as UsageView)}
+                >
+                  <option value='monthly'>{t('Monthly statement')}</option>
+                  <option value='models'>{t('By model')}</option>
+                  <option value='channels'>{t('By channel')}</option>
+                </select>
+              </>
+            )}
+            {activeView !== 'monthly' && (
+              <>
+                <Label htmlFor='usage-period'>{t('Report period')}</Label>
+                <select
+                  id='usage-period'
+                  className='bg-background rounded-md border px-3 py-2 text-sm'
+                  value={period}
+                  onChange={(event) => setPeriod(event.target.value)}
+                >
+                  <option value='year'>{t('Selected year total')}</option>
+                  {[...data.months].reverse().map((month) => (
+                    <option key={month.month} value={month.month}>
+                      {month.month}
+                      {month.in_progress ? ` · ${t('Month to date')}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+          {activeView === 'monthly' ? (
+            <MonthlyUsageTable key={year} report={data} />
+          ) : (
+            <UsageBreakdownTable
+              report={data}
+              period={period}
+              view={activeView}
+            />
+          )}
         </>
       )}
       <p className='text-muted-foreground text-xs'>
