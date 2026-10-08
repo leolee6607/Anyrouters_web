@@ -1887,7 +1887,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "相关项目",
     "footer.defaultCopyright": "版权所有。",
-    "footer.new\u0061pi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
+    "footer.newapi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
     "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment": "对于 2025 年 5 月 10 日之后添加的渠道，在部署时无需从模型名称中移除 \".\"",
     "For private deployments, format: https://fastgpt.run/api/openapi": "对于私有部署，格式为：https://fastgpt.run/api/openapi",
     "Force a syntactically valid JSON response": "强制返回语法合法的 JSON",
@@ -5030,5 +5030,20 @@
     "The reference image is too large to process. Please upload it again and retry.": "参考图片过大且自动压缩失败，请重新上传图片后再试。",
     "You have {{count}} unread support ticket replies.": "您有 {{count}} 条未读工单回复。",
     "There are {{count}} unread support tickets waiting for staff.": "有 {{count}} 个未读工单等待客服处理。"
-  }
+  },
+  "Monthly consumption": "月度消费",
+  "Monthly website consumption": "每月网站消费",
+  "Month / channel": "月份 / 渠道",
+  "Charges (USD)": "扣费（USD）",
+  "Refunds (USD)": "退款（USD）",
+  "Net consumption (USD)": "净消费（USD）",
+  "Channel breakdown for {{month}}": "{{month}} 渠道明细",
+  "Month to date": "截至目前",
+  "No consumption records": "无消费记录",
+  "Unnamed or deleted channel": "未命名或已删除渠道",
+  "Year total": "年度合计",
+  "Actual website charges after discounts, less recorded refunds. Includes all API keys for this user; not recharge payments or cloud provider costs.": "按网站折扣后实际扣费，减去已记录退款；包含该用户名下全部 API Key，不代表充值付款或云厂商成本。",
+  "Unable to load monthly usage. Please retry.": "月度消费加载失败，请重试。",
+  "As of {{time}} · Beijing time (UTC+8)": "截至 {{time}} · 北京时间（UTC+8）",
+  "Based on retained consumption and refund logs. Deleted or unrecorded usage is not included; channel names reflect current settings.": "统计基于现存消费与退款日志，已清理或未记录的用量不包含在内；渠道名称按当前设置显示。"
 }
