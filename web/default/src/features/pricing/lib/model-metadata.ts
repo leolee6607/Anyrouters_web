@@ -332,6 +332,25 @@ export type ModelMetadata = {
  */
 export function inferModelMetadata(model: PricingModel): ModelMetadata {
   const name = model.model_name || ''
+  if (name === 'gemini-nano-banana-2.1') {
+    // Verified publisher metadata; do not use seeded demo dates or capabilities.
+    return {
+      context_length: 131_072,
+      max_output_tokens: 32_768,
+      knowledge_cutoff: '',
+      release_date: '2026-10-06',
+      parameter_count: '',
+      input_modalities: ['text', 'image', 'video', 'file'],
+      output_modalities: ['text', 'image'],
+      capabilities: [
+        'streaming',
+        'system_prompt',
+        'vision',
+        'reasoning',
+        'caching',
+      ],
+    }
+  }
   const rand = seededRandom(hashStringToSeed(name))
   const tags = parseModelTags(model.tags)
   const endpoints = model.supported_endpoint_types || []
@@ -424,8 +443,8 @@ export type ApiInfo = {
   tokenizer_note?: string
   license: string
   license_kind: 'proprietary' | 'open' | 'open-weight' | 'unknown'
-  data_retention_days: number
-  training_opt_out: boolean
+  data_retention_days: number | null
+  training_opt_out: boolean | null
   homepage?: string
 }
 
@@ -562,7 +581,11 @@ export function inferApiInfo(model: PricingModel): ApiInfo {
   const tk = inferTokenizer(model, vendor)
   const license = LICENSE_BY_VENDOR[vendor]
   const rand = seededRandom(hashStringToSeed(`${model.model_name}:api`))
-  const retention = vendor === 'openai' ? 30 : Math.round(rand() * 90)
+  const verifiedImageModel = model.model_name === 'gemini-nano-banana-2.1'
+  let retention: number | null =
+    vendor === 'openai' ? 30 : Math.round(rand() * 90)
+  if (verifiedImageModel) retention = null
+
   return {
     vendor,
     vendor_label: VENDOR_LABELS[vendor],
@@ -571,7 +594,7 @@ export function inferApiInfo(model: PricingModel): ApiInfo {
     license: license.license,
     license_kind: license.kind,
     data_retention_days: retention,
-    training_opt_out: true,
+    training_opt_out: verifiedImageModel ? null : true,
     homepage: HOMEPAGE_BY_VENDOR[vendor],
   }
 }

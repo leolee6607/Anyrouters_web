@@ -78,6 +78,12 @@ export function usePricingData() {
         vendor_description: vendor?.description,
         group_ratio: data.group_ratio,
         group_model_ratio: overrideFor(model.model_name),
+        group_model_ratios: Object.fromEntries(
+          Object.entries(groupModelRatio).map(([group, ratios]) => [
+            group,
+            ratios[model.model_name] ?? 1,
+          ])
+        ),
       }
     })
     return [...live, ...COMING_SOON_MODELS]

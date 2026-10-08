@@ -4,6 +4,8 @@ import (
 	"github.com/QuantumNous/new-api/setting/config"
 )
 
+const GeminiNanoBanana21 = "gemini-nano-banana-2.1"
+
 // GeminiSettings defines Gemini model configuration. 注意bool要以enabled结尾才可以生效编辑
 type GeminiSettings struct {
 	SafetySettings                        map[string]string `json:"safety_settings"`
@@ -25,6 +27,7 @@ var defaultGeminiSettings = GeminiSettings{
 		"gemini-1.0-pro": "v1",
 	},
 	SupportedImagineModels: []string{
+		GeminiNanoBanana21,
 		"gemini-2.0-flash-exp-image-generation",
 		"gemini-2.0-flash-exp",
 		"gemini-3-pro-image",

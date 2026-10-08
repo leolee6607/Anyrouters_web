@@ -80,3 +80,27 @@ describe('playground reasoning payload', () => {
     assert.equal(unsupported.reasoning_effort, undefined)
   })
 })
+
+test('Nano Banana 2.1 uses image controls without chat defaults or multi-candidate requests', () => {
+  const payload = buildChatCompletionPayload(
+    messages,
+    config({ model: 'gemini-nano-banana-2.1', seed: 42 }),
+    { ...DEFAULT_PARAMETER_ENABLED, seed: true },
+    '16:9',
+    '4K',
+    undefined,
+    4
+  )
+  assert.equal(
+    payload.messages.some((m) => m.role === 'system'),
+    false
+  )
+  assert.equal(payload.tools, undefined)
+  assert.equal(payload.temperature, undefined)
+  assert.equal(payload.top_p, undefined)
+  assert.equal(payload.seed, undefined)
+  assert.equal((payload as unknown as { n?: number }).n, undefined)
+  assert.deepEqual(payload.extra_body, {
+    google: { image_config: { aspect_ratio: '16:9', image_size: '4K' } },
+  })
+})

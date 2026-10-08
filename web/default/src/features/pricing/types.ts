@@ -60,6 +60,7 @@ export type PricingModel = {
    * 1 (or absent) means no override.
    */
   group_model_ratio?: number
+  group_model_ratios?: Record<string, number>
   /** Billing mode (e.g. "tiered_expr") used to flag dynamic pricing */
   billing_mode?: string
   /** Raw expression describing dynamic / tiered billing */

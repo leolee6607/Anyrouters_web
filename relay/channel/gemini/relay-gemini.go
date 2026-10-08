@@ -200,6 +200,9 @@ func ThinkingAdaptor(geminiRequest *dto.GeminiChatRequest, info *relaycommon.Rel
 // Setting safety to the lowest possible values since Gemini is already powerless enough
 func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, info *relaycommon.RelayInfo) (*dto.GeminiChatRequest, error) {
 
+	if err := validateBananaChat(info.UpstreamModelName, &textRequest); err != nil {
+		return nil, err
+	}
 	geminiRequest := dto.GeminiChatRequest{
 		Contents: make([]dto.GeminiChatContent, 0, len(textRequest.Messages)),
 		GenerationConfig: dto.GeminiChatGenerationConfig{
@@ -641,6 +644,9 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		}
 	}
 
+	if err := configureBanana(info.UpstreamModelName, &geminiRequest, textRequest.ReasoningEffort); err != nil {
+		return nil, err
+	}
 	return &geminiRequest, nil
 }
 
@@ -1344,6 +1350,8 @@ func handleFinalStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.Ch
 func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response, callback func(data string, geminiResponse *dto.GeminiChatResponse) bool) (*dto.Usage, *types.NewAPIError) {
 	var usage = &dto.Usage{}
 	var imageCount int
+	var bananaError *types.NewAPIError
+	var bananaComplete bool
 	finishedCandidates := map[int64]bool{}
 	responseText := strings.Builder{}
 
@@ -1354,6 +1362,10 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			return
 		}
 
+		if bananaError = bananaResponseError(info.UpstreamModelName, &geminiResponse); bananaError != nil {
+			sr.Stop(bananaError)
+			return
+		}
 		if len(geminiResponse.Candidates) == 0 && geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
 			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 		}
@@ -1361,7 +1373,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		// 统计图片数量
 		for _, candidate := range geminiResponse.Candidates {
 			for _, part := range candidate.Content.Parts {
-				if part.InlineData != nil && part.InlineData.MimeType != "" {
+				if part.InlineData != nil && part.InlineData.MimeType != "" && (info.UpstreamModelName != model_setting.GeminiNanoBanana21 || !part.Thought) {
 					imageCount++
 				}
 				if part.Text != "" {
@@ -1390,10 +1402,23 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			return
 		}
 		if allFinished && geminiResponse.UsageMetadata.TotalTokenCount > 0 {
+			bananaComplete = true
 			sr.Done()
 		}
 	})
 
+	if bananaError != nil {
+		return nil, bananaError
+	}
+	if info.UpstreamModelName == model_setting.GeminiNanoBanana21 {
+		if !bananaComplete {
+			return nil, types.NewErrorWithStatusCode(errors.New("incomplete image stream from Google; this request is not charged"), types.ErrorCodeBadResponseBody, http.StatusBadGateway, types.ErrOptionWithSkipRetry())
+		}
+		if err := bananaUsageError(info.UpstreamModelName, usage, imageCount > 0); err != nil {
+			return nil, err
+		}
+		return usage, nil
+	}
 	if imageCount != 0 {
 		if usage.CompletionTokens == 0 {
 			usage.CompletionTokens = imageCount * 1400
@@ -1419,6 +1444,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	nextToolCallIndexByChoice := make(map[int]int)
 
 	usage, err := geminiStreamHandler(c, info, resp, func(data string, geminiResponse *dto.GeminiChatResponse) bool {
+		filterBananaDraftImages(info.UpstreamModelName, geminiResponse)
 		response, isStop := streamResponseGeminiChat2OpenAI(geminiResponse)
 
 		response.Id = id
@@ -1527,6 +1553,9 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+	if err := bananaResponseError(info.UpstreamModelName, &geminiResponse); err != nil {
+		return nil, err
+	}
 	if len(geminiResponse.Candidates) == 0 {
 		usage := buildUsageFromGeminiMetadata(geminiResponse.UsageMetadata, info.GetEstimatePromptTokens())
 
@@ -1561,6 +1590,10 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 			})
 		}
 		return &usage, nil
+	}
+	filterBananaDraftImages(info.UpstreamModelName, &geminiResponse)
+	if err := bananaFullResponseUsageError(info.UpstreamModelName, &geminiResponse); err != nil {
+		return nil, err
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.UpstreamModelName

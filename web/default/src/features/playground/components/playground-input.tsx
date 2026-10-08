@@ -46,7 +46,7 @@ import { ModelGroupSelector } from '@/components/model-group-selector'
 import {
   ASPECT_RATIOS,
   IMAGE_QUALITIES,
-  IMAGE_COUNTS,
+  imageCountsForModel,
   VIDEO_ASPECT_RATIOS,
   videoResolutionsForModel,
   videoDurationsForResolution,
@@ -436,8 +436,14 @@ export function PlaygroundInput({
               {showImageOptions && (
                 <OptionPill
                   label={t('Count')}
-                  value={String(imageOptions!.count)}
-                  options={IMAGE_COUNTS.map((n) => ({
+                  value={String(
+                    imageCountsForModel(modelValue).includes(
+                      imageOptions!.count
+                    )
+                      ? imageOptions!.count
+                      : 1
+                  )}
+                  options={imageCountsForModel(modelValue).map((n) => ({
                     value: String(n),
                     label: `×${n}`,
                   }))}

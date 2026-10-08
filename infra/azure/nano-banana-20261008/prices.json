@@ -1,0 +1,16 @@
+{
+  "model": "gemini-nano-banana-2.1",
+  "upstream": "Vertex AI global / anyrouters-prod",
+  "input": 1.5,
+  "cached_input": 0.15,
+  "text_and_thinking_output": 7.5,
+  "image_output": 30,
+  "expression": "tier(\"standard\", p * 1.5 + cr * 0.15 + c * 7.5 + img_o * 30)",
+  "groups": {"default": 0.5, "btob": 0.5, "b2b_16": 0.65, "b2b_31": 0.4},
+  "units": "USD per million tokens, before group discount",
+  "sources": [
+    "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing",
+    "https://ai.google.dev/gemini-api/docs/pricing",
+    "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/nano-banana-2-1"
+  ]
+}

@@ -19,8 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useState, useMemo, useCallback } from 'react'
 import { ChevronsUpDown, Check, CpuIcon, LayersIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
 import {
@@ -88,12 +88,14 @@ function inferModelKind(modelName: string): string {
   // Gemini's image family is marketed as "Nano Banana" (2.5-flash-image) /
   // "Nano Banana 2" (3.x-flash-image) / "Nano Banana Pro" (3-pro-image) — show
   // that name, it's what users actually recognise.
+  if (m === 'gemini-nano-banana-2.1') return 'Nano Banana 2.1'
   if (/gemini-3-pro-image/.test(m)) return 'Nano Banana Pro'
   if (/gemini.*flash-lite-image/.test(m)) return 'Nano Banana 2 Lite'
   if (/gemini.*flash-image/.test(m)) {
     return /3\.\d|3-/.test(m) ? 'Nano Banana 2' : 'Nano Banana'
   }
-  if (/image|imagen|dall|flux|midjourney|stable-?diffusion/.test(m)) return '出图'
+  if (/image|imagen|dall|flux|midjourney|stable-?diffusion/.test(m))
+    return '出图'
 
   // —— OpenAI ——
   if (/codex/.test(m)) return '编程'
@@ -127,7 +129,14 @@ function inferModelKind(modelName: string): string {
 // whatever order the backend happens to return. Anthropic first (our flagship
 // Claude models), then Google, then OpenAI, then the rest; unknown vendors sink
 // to the bottom.
-const VENDOR_ORDER = ['Anthropic', 'Google', 'OpenAI', 'xAI', 'DeepSeek', 'Qwen']
+const VENDOR_ORDER = [
+  'Anthropic',
+  'Google',
+  'OpenAI',
+  'xAI',
+  'DeepSeek',
+  'Qwen',
+]
 function vendorRank(name: string): number {
   const i = VENDOR_ORDER.indexOf(name)
   return i === -1 ? VENDOR_ORDER.length : i
@@ -140,6 +149,7 @@ function vendorRank(name: string): number {
 function modelRank(modelName: string): number {
   const m = modelName.toLowerCase()
 
+  if (m === 'gemini-nano-banana-2.1') return 20.5
   if (/gemini-omni-flash/.test(m)) return 29 // Omni 视频
 
   // Text — top tier first.
@@ -321,9 +331,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
       // order). Custom/unknown categories fall back to alphabetical at the end.
       const ordered: Record<string, ModelOption[]> = {}
       Object.keys(raw)
-        .sort(
-          (a, b) => vendorRank(a) - vendorRank(b) || a.localeCompare(b)
-        )
+        .sort((a, b) => vendorRank(a) - vendorRank(b) || a.localeCompare(b))
         .forEach((k) => {
           ordered[k] = raw[k]
         })
