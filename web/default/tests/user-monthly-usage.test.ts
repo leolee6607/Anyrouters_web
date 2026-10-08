@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   formatUsageUSD,
+  previousUsageMonth,
   monthlyUsageCSV,
   usageBreakdownCSV,
   usageBreakdownPeriod,
@@ -29,6 +30,11 @@ const report: UserMonthlyUsage = {
 }
 
 describe('monthly consumption display and exports', () => {
+  test('defaults to the previous completed Beijing month, including January rollover', () => {
+    expect(previousUsageMonth(new Date('2026-10-08T04:00:00Z'))).toEqual({ year: 2026, period: '2026-09' })
+    expect(previousUsageMonth(new Date('2026-12-31T16:00:00Z'))).toEqual({ year: 2026, period: '2026-12' })
+    expect(previousUsageMonth(new Date('2026-09-30T15:59:59Z'))).toEqual({ year: 2026, period: '2026-08' })
+  })
   test('preserves amounts beyond JavaScript integer precision and sub-cent charges', () => {
     expect(formatUsageUSD('9007199254740993.000002')).toBe('$9,007,199,254,740,993.000002')
     expect(formatUsageUSD('3358.249884')).toBe('$3,358.249884')

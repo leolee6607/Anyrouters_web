@@ -64,6 +64,23 @@ export function currentUsageYear(): number {
     }).format(new Date())
   )
 }
+export function previousUsageMonth(now = new Date()): {
+  year: number
+  period: string
+} {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric',
+  }).formatToParts(now)
+  let year = Number(parts.find((part) => part.type === 'year')?.value)
+  let month = Number(parts.find((part) => part.type === 'month')?.value) - 1
+  if (month === 0) {
+    year -= 1
+    month = 12
+  }
+  return { year, period: `${year}-${String(month).padStart(2, '0')}` }
+}
 export function formatUsageUSD(value: string): string {
   if (!/^-?\d+(\.\d+)?$/.test(value)) return '—'
   const [whole, rawFraction = ''] = value.split('.')

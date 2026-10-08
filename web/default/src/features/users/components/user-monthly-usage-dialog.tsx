@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog } from '@/components/dialog'
 import {
   currentUsageYear,
+  previousUsageMonth,
   downloadMonthlyUsage,
   downloadUsageBreakdown,
   usageBreakdownPeriod,
@@ -24,9 +25,10 @@ export function UserMonthlyUsageDialog(props: {
 }) {
   const { t, i18n } = useTranslation()
   const currentYear = currentUsageYear()
-  const [year, setYear] = useState(currentYear)
+  const defaultPeriod = previousUsageMonth()
+  const [year, setYear] = useState(defaultPeriod.year)
   const [view, setView] = useState<UsageView>(props.initialView ?? 'monthly')
-  const [period, setPeriod] = useState('year')
+  const [period, setPeriod] = useState(defaultPeriod.period)
   const query = useQuery({
     queryKey: ['user-monthly-usage', props.user.id, year],
     queryFn: () => getUserMonthlyUsage(props.user.id, year),
