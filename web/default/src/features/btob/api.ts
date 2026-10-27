@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
 import { api } from '@/lib/api'
 
 // B2B pricing lives behind an admin-only (role=10) endpoint that exposes just
@@ -139,6 +140,9 @@ export async function getB2BBalanceAlerts(
   const response = await api.get('/api/btob/balance-alerts', {
     params: { group },
   })
+  if (response.data?.success !== true || !Array.isArray(response.data.data)) {
+    throw new Error(response.data?.message || t('Request failed'))
+  }
   return response.data
 }
 
@@ -146,6 +150,9 @@ export async function saveB2BBalanceAlert(
   payload: B2BBalanceAlertInput
 ): Promise<{ success: boolean }> {
   const response = await api.put('/api/btob/balance-alerts', payload)
+  if (response.data?.success !== true) {
+    throw new Error(response.data?.message || t('Request failed'))
+  }
   return response.data
 }
 
@@ -153,5 +160,12 @@ export async function testB2BBalanceAlert(
   payload: B2BBalanceAlertInput
 ): Promise<{ success: boolean; data: B2BAlertTestResult }> {
   const response = await api.post('/api/btob/balance-alerts/test', payload)
+  if (
+    response.data?.success !== true ||
+    !Array.isArray(response.data.data?.sent) ||
+    !Array.isArray(response.data.data?.failed)
+  ) {
+    throw new Error(response.data?.message || t('Request failed'))
+  }
   return response.data
 }
