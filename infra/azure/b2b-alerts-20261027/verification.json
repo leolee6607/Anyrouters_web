@@ -15,7 +15,7 @@
   "test_email_smtp_accepted": true,
   "test_email_count": 1,
   "reminder_not_enabled": true,
-  "recipient_inbox_confirmed": false,
+  "recipient_inbox_confirmed": true,
   "runtime_log_summary": {
     "lines": 152,
     "markers": {
