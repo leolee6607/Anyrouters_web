@@ -23,7 +23,7 @@ B 端分组卡片增加“用量提醒”。管理员选择组内客户后，可
 - PUT `/api/btob/balance-alerts`
 - POST `/api/btob/balance-alerts/test`
 
-新增提醒状态表 `B2BBalanceAlert`（实际表名由 GORM 生成），客户 ID 为主键。正常和快速迁移路径均已登记；SQLite 测试通过，SQL 使用 GORM 以兼容 MySQL、PostgreSQL。未在真实 MySQL/PostgreSQL 实例执行迁移验证。
+新增提醒状态表 `B2BBalanceAlert`（实际表名由 GORM 生成），客户 ID 为主键。正常和快速迁移路径均已登记；SQLite 测试通过，SQL 使用 GORM 以兼容 MySQL、PostgreSQL。生产发布已验证 MySQL 新表读取；PostgreSQL 未在真实实例执行迁移验证。
 
 不修改钱包、Key 剩余额度、折扣、消费记录及客户原有个人通知设置，不自动续额或向聊天群发送消息。新增功能默认不产生任何邮件。
 
@@ -40,4 +40,4 @@ B 端分组卡片增加“用量提醒”。管理员选择组内客户后，可
 - default 前端 typecheck、相关文件 ESLint / Prettier、default 与 classic 生产构建。
 - Playwright 本地模拟接口：5 种视口滚动；桌面/手机自定义阈值、多邮箱、测试不保存不开启、保存回读、非法邮箱阻止；Key 剩余/已用显示及编辑文案。
 
-所有邮件逻辑测试使用模拟发送器或本机超时接收端，未发送外部邮件。上线后需管理员填写收件邮箱，用测试按钮验证实际收信，再开启对应客户提醒。
+本地邮件测试使用模拟发送器或本机超时接收端。发布时经用户授权，通过真实页面向单个指定收件邮箱发送了一封测试邮件，SMTP 已接受；没有保存配置或启用自动提醒。管理员仍需填写实际收件邮箱、确认收信后，再开启对应客户提醒。

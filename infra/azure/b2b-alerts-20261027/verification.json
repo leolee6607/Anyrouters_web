@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-27",
+  "runtime_commit": "ed7b7f71e67c9852f9c0679036344fdb635b7624",
+  "revision": "ca-anyrouters-web--b2b-alerts-ed7b7f71",
+  "image": "acranyroutersprod.azurecr.io/new-api@sha256:d48c2e2941a7501c0e82ae1e7d153c4dcc4ff14a925c66ee55a9cb1f6dbf1392",
+  "acr_run": "ccr",
+  "traffic_percent": 100,
+  "configuration_unchanged": true,
+  "model_catalog_count": 35,
+  "pricing_unchanged": true,
+  "anonymous_alert_http": 401,
+  "production_group_scroll_ok": true,
+  "production_alert_ui_ok": true,
+  "production_browser_errors": [],
+  "test_email_smtp_accepted": true,
+  "test_email_count": 1,
+  "reminder_not_enabled": true,
+  "recipient_inbox_confirmed": false,
+  "runtime_log_summary": {
+    "lines": 152,
+    "markers": {
+      "panic": 0,
+      "fatal": 0,
+      "B2B.*failed": 0,
+      "migration.*fail": 0,
+      "redis.*error": 0
+    }
+  },
+  "rollback_revision": "ca-anyrouters-web--user-breakdown-117ea5bf2",
+  "pull_request": "https://github.com/leolee6607/Anyrouters_web/pull/39"
+}
