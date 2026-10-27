@@ -29,7 +29,7 @@ export function BtoB() {
   const { t } = useTranslation()
 
   return (
-    <SectionPageLayout fixedContent>
+    <SectionPageLayout>
       <SectionPageLayout.Title>{t('B2B Customers')}</SectionPageLayout.Title>
       <SectionPageLayout.Content>
         <B2BCustomersPanel />

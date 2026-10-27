@@ -122,7 +122,6 @@ function ApiKeysMobileList({
       {rows.map((row) => {
         const apiKey = row.original
         const statusConfig = API_KEY_STATUSES[apiKey.status]
-        const total = apiKey.used_quota + apiKey.remain_quota
 
         return (
           <div
@@ -163,10 +162,10 @@ function ApiKeysMobileList({
                 <span className='font-medium'>{t('Unlimited')}</span>
               ) : (
                 <span className='font-medium tabular-nums'>
-                  {formatQuota(apiKey.remain_quota)}
+                  {t('Remaining:')} {formatQuota(apiKey.remain_quota)}
                   <span className='text-muted-foreground font-normal'>
-                    {' / '}
-                    {formatQuota(total)}
+                    {' · '}
+                    {t('Used:')} {formatQuota(apiKey.used_quota)}
                   </span>
                 </span>
               )}

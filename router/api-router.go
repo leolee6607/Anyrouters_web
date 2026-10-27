@@ -337,6 +337,9 @@ func SetApiRouter(router *gin.Engine) {
 			btobRoute.POST("/customers/move", controller.MoveB2BCustomer)
 			btobRoute.PUT("/group-pricing", controller.UpdateB2BGroupPricing)
 			btobRoute.PUT("/group-label", controller.UpdateB2BGroupLabel)
+			btobRoute.GET("/balance-alerts", controller.GetB2BBalanceAlerts)
+			btobRoute.PUT("/balance-alerts", controller.UpdateB2BBalanceAlert)
+			btobRoute.POST("/balance-alerts/test", controller.TestB2BBalanceAlert)
 		}
 
 		// Native in-app support tickets. Self routes (UserAuth) let a logged-in

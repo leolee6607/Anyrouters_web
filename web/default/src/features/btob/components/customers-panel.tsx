@@ -81,6 +81,7 @@ import {
   groupVendorDiscounts,
   isDedicatedB2BGroup,
 } from '../lib'
+import { B2BBalanceAlertPanel } from './balance-alert-panel'
 import { B2BPricingPanel } from './pricing-panel'
 
 // $1 of quota = 500000 internal units (project invariant).
@@ -103,6 +104,7 @@ export function B2BCustomersPanel() {
   const queryClient = useQueryClient()
   const [keyword, setKeyword] = useState('')
   const [pricingGroup, setPricingGroup] = useState<string | null>(null)
+  const [alertGroup, setAlertGroup] = useState<string | null>(null)
 
   const customersQuery = useQuery({
     queryKey: ['btob-customers'],
@@ -391,13 +393,25 @@ export function B2BCustomersPanel() {
                       ))}
                     </div>
                   </div>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={() => setPricingGroup(g)}
-                  >
-                    {t('Edit discount')}
-                  </Button>
+                  <div className='flex flex-wrap gap-2'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      disabled={
+                        !customers.some((customer) => customer.group === g)
+                      }
+                      onClick={() => setAlertGroup(g)}
+                    >
+                      {t('Usage reminder')}
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setPricingGroup(g)}
+                    >
+                      {t('Edit discount')}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -500,6 +514,38 @@ export function B2BCustomersPanel() {
           )
         })
       )}
+
+      <Sheet
+        open={alertGroup != null}
+        onOpenChange={(open) => !open && setAlertGroup(null)}
+      >
+        <SheetContent className={sideDrawerContentClassName('sm:max-w-xl')}>
+          <SheetHeader className={sideDrawerHeaderClassName()}>
+            <SheetTitle>
+              {t('Usage reminder')} ·{' '}
+              {alertGroup
+                ? labels[alertGroup] || defaultGroupName(alertGroup)
+                : ''}
+            </SheetTitle>
+            <SheetDescription>
+              {t(
+                'Notify your team before a customer’s account balance runs out.'
+              )}
+            </SheetDescription>
+          </SheetHeader>
+          <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6'>
+            {alertGroup && (
+              <B2BBalanceAlertPanel
+                key={alertGroup}
+                group={alertGroup}
+                customers={customers.filter(
+                  (customer) => customer.group === alertGroup
+                )}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Per-group pricing drawer. */}
       <Sheet
