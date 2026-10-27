@@ -246,7 +246,9 @@ export function ApiKeysMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = t('Quota ({{currency}})', { currency: currencyLabel })
+  const quotaLabel = t('Remaining quota ({{currency}})', {
+    currency: currencyLabel,
+  })
   const quotaPlaceholder = tokensOnly
     ? t('Enter quota in tokens')
     : t('Enter quota in {{currency}}', { currency: currencyLabel })
@@ -423,6 +425,11 @@ export function ApiKeysMutateDrawer({
                           }
                         />
                       </FormControl>
+                      <FormDescription>
+                        {t(
+                          'Sets how much this key can still spend. Previous usage is kept; this does not add funds to the account.'
+                        )}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -51,9 +51,7 @@ export async function updateB2BPricing(payload: {
 // Provision makes the B2B group usable end-to-end: it ensures the group exists
 // and appends it to every serving channel (rebuilding abilities), so B2B users
 // can actually call models. Idempotent — safe to call repeatedly.
-export async function provisionB2BGroup(
-  group = 'btob'
-): Promise<{
+export async function provisionB2BGroup(group = 'btob'): Promise<{
   success: boolean
   message?: string
   data?: { group: string; channels_updated: number }
@@ -116,4 +114,44 @@ export async function updateB2BGroupLabel(payload: {
 }): Promise<{ success: boolean; message?: string }> {
   const res = await api.put('/api/btob/group-label', payload)
   return res.data
+}
+
+export type B2BBalanceAlertInput = {
+  group: string
+  user_id: number
+  enabled: boolean
+  threshold_quota: number
+  recipients: string[]
+  revision: number
+}
+
+export type B2BBalanceAlert = B2BBalanceAlertInput & {
+  last_checked_at: number
+  last_notified_at: number
+  delivery_failed: boolean
+}
+
+export type B2BAlertTestResult = { sent: string[]; failed: string[] }
+
+export async function getB2BBalanceAlerts(
+  group: string
+): Promise<{ success: boolean; data: B2BBalanceAlert[] }> {
+  const response = await api.get('/api/btob/balance-alerts', {
+    params: { group },
+  })
+  return response.data
+}
+
+export async function saveB2BBalanceAlert(
+  payload: B2BBalanceAlertInput
+): Promise<{ success: boolean }> {
+  const response = await api.put('/api/btob/balance-alerts', payload)
+  return response.data
+}
+
+export async function testB2BBalanceAlert(
+  payload: B2BBalanceAlertInput
+): Promise<{ success: boolean; data: B2BAlertTestResult }> {
+  const response = await api.post('/api/btob/balance-alerts/test', payload)
+  return response.data
 }
