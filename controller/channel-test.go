@@ -45,6 +45,11 @@ type testResult struct {
 
 func normalizeChannelTestEndpoint(channel *model.Channel, modelName, endpointType string) string {
 	normalized := strings.TrimSpace(endpointType)
+	// Channel health checks must use the same upstream protocol as live Chat requests.
+	if channel != nil && (normalized == "" || normalized == string(constant.EndpointTypeOpenAI)) &&
+		service.ShouldChatCompletionsUseResponsesGlobal(channel.Id, channel.Type, modelName) {
+		return string(constant.EndpointTypeOpenAIResponse)
+	}
 	if normalized != "" {
 		return normalized
 	}

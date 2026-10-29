@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/billingexpr"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/types"
@@ -79,4 +81,36 @@ func TestResolveChannelTestUserIDUsesRequestUser(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, userID)
+}
+
+func TestChannelTestUsesNativeGPT6ResponsesRoute(t *testing.T) {
+	for _, name := range []string{"gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-6.1-sol", "gpt-6.1-terra"} {
+		for _, channelType := range []int{constant.ChannelTypeAzure, constant.ChannelTypeOpenAI} {
+			for _, endpoint := range []string{"", "openai", "openai-response"} {
+				channel := &model.Channel{Id: 3, Type: channelType}
+				got := normalizeChannelTestEndpoint(channel, name, endpoint)
+				require.Equal(t, "openai-response", got)
+				request := buildTestRequest(name, got, channel, false)
+				response, ok := request.(*dto.OpenAIResponsesRequest)
+				require.True(t, ok)
+				require.Equal(t, name, response.Model)
+				require.NotEmpty(t, response.Input)
+				payload, err := common.Marshal(request)
+				require.NoError(t, err)
+				require.NotContains(t, string(payload), `"max_tokens"`)
+			}
+		}
+	}
+	for _, tc := range []struct {
+		channel              *model.Channel
+		name, endpoint, want string
+	}{
+		{nil, "gpt-6.1-terra", "openai", "openai"},
+		{&model.Channel{Type: constant.ChannelTypeOpenRouter}, "gpt-6.1-terra", "openai", "openai"},
+		{&model.Channel{Type: constant.ChannelTypeAzure}, "gpt-4o", "openai", "openai"},
+		{&model.Channel{Type: constant.ChannelTypeAzure}, "gpt-6.1-terra-alias", "", ""},
+		{&model.Channel{Type: constant.ChannelTypeAzure}, "gpt-6.1-terra", "image-generation", "image-generation"},
+	} {
+		require.Equal(t, tc.want, normalizeChannelTestEndpoint(tc.channel, tc.name, tc.endpoint))
+	}
 }
