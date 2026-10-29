@@ -35,14 +35,16 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getStatus, getUserGroups } from '@/lib/api'
+import { API_ORIGIN, OPENAI_BASE_URL } from '@/lib/api-endpoints'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createApiKey, fetchTokenKey, searchApiKeys } from '../keys/api'
 import type { ApiResponse, CreatedApiKey } from '../keys/types'
+import { ApiAccessGuide } from './components/api-access-guide'
 
-const ANTHROPIC_BASE = 'https://api.anyrouters.com'
+const ANTHROPIC_BASE = API_ORIGIN
 const CODEX_OFFICIAL_URL =
   'https://developers.openai.com/codex/quickstart?setup=app'
 const CODEX_CLI_OFFICIAL_URL =
@@ -59,7 +61,7 @@ const CODEX_PROVIDER_SYNC_URL =
 const KEY = 'YOUR_ANYROUTERS_API_KEY'
 const CODEX_DEFAULT_MODEL = 'gpt-5.6-sol'
 const CLAUDE_DEFAULT_MODEL = 'claude-sonnet-4-6'
-const OPENAI_COMPATIBLE_BASE = `${ANTHROPIC_BASE}/v1`
+const OPENAI_COMPATIBLE_BASE = OPENAI_BASE_URL
 const ANYROUTERS_IMAGE_SKILL_URL = '/install/anyrouters-image.zip'
 
 type GuideProps = {
@@ -300,42 +302,20 @@ function CodexUpdateNotice() {
 }
 
 function ClaudeProxyNotice() {
-  const { os } = useOsChoice()
-  if (os === 'linux') return null
-  const systemName = os === 'windows' ? 'Windows' : 'macOS'
-  const title =
-    os === 'windows'
-      ? 'Windows 运行前：请先连接代理软件'
-      : 'macOS 直连受限时：请保持代理软件连接'
-
+  const { t } = useTranslation()
   return (
-    <div className='rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100'>
-      <p className='font-semibold'>{title}</p>
-      <ul className='mt-1 list-disc space-y-1 pl-5'>
-        <li>
-          脚本会分别验证直连和已配置的 HTTP/Mixed
-          代理；仅在直连异常、代理链路正常时写入 Claude 专属代理配置。
-        </li>
-        {os === 'mac' && (
-          <li>
-            TUN/Fake-IP
-            或透明代理通常可直接使用；仅开系统代理或规则模式时，脚本会读取 macOS
-            已配置的 HTTP/HTTPS 代理。
-          </li>
+    <div className='bg-muted/30 rounded-lg border px-4 py-3 text-sm leading-6'>
+      <p className='font-semibold'>{t('Network connection')}</p>
+      <p className='text-muted-foreground mt-1'>
+        {t(
+          'AnyRouters API requests can connect directly. The setup script checks direct access and configured HTTP/Mixed proxies, and uses a proxy only when direct access fails and the proxy works. It does not change system-wide proxy settings.'
         )}
-        <li>
-          不要求开启全局模式；使用规则模式时，请确保{' '}
-          <code>api.anyrouters.com</code> 经过代理。
-        </li>
-        <li>
-          安装及后续使用期间都要保持代理软件连接。脚本不会修改 {systemName}
-          全局代理，也不会扫描或猜测本地端口。
-        </li>
-        <li>
-          Claude Code 不支持 SOCKS-only 或 PAC 地址；代理软件需要提供 HTTP 或
-          Mixed 端口。
-        </li>
-      </ul>
+      </p>
+      <p className='text-muted-foreground mt-2'>
+        {t(
+          'If Claude settings contain a proxy, keep it available. When switching to direct access, remove obsolete HTTP_PROXY and HTTPS_PROXY entries from Claude settings and the terminal environment. Third-party installation and sign-in may have separate network requirements.'
+        )}
+      </p>
     </div>
   )
 }
@@ -939,55 +919,40 @@ function ClaudeContextLimitFaq() {
 }
 
 function ClaudeProxyFaq() {
-  const { os } = useOsChoice()
-  if (os === 'linux') return null
-  const systemName = os === 'windows' ? 'Windows' : 'macOS'
-
+  const { t } = useTranslation()
   return (
     <section className='border-b py-10'>
-      <SectionTitle>{systemName} 403 与代理排障</SectionTitle>
+      <SectionTitle>{t('Connection checks')}</SectionTitle>
       <div className='mt-6 rounded-lg border px-4 py-4 text-sm leading-6'>
         <StepTitle>
-          提示 Please run /login，并返回 HTML 403，应该怎么办？
+          {t('Claude Code returns HTML 403 or asks you to log in')}
         </StepTitle>
-        <p className='text-muted-foreground mt-2'>
-          如果错误内容带有{' '}
-          <code className='text-foreground'>&lt;!doctype html&gt;</code>、
-          <code className='text-foreground'>
-            &lt;title&gt;403&lt;/title&gt;
-          </code>{' '}
-          或 <code className='text-foreground'>403 Forbidden</code>
-          ，通常是 {systemName} 终端中的 Claude 没有走到代理，并不是 Key
-          失效，也不需要反复执行 <code className='text-foreground'>/login</code>
-          。浏览器能打开网站也不能证明 Claude
-          已经走代理，因为两者读取代理设置的方式不同。
-        </p>
         <ol className='text-muted-foreground mt-3 list-decimal space-y-2 pl-5'>
-          <li>确认代理软件已连接，并提供 HTTP 或 Mixed 端口。</li>
           <li>
-            规则模式下确认{' '}
-            <code className='text-foreground'>api.anyrouters.com</code>{' '}
-            经过代理；全局模式不是必需条件。
+            {t(
+              'Check that ANTHROPIC_BASE_URL is https://api.anyrouters.com, without /v1. Use an AnyRouters API key.'
+            )}
           </li>
           <li>
-            回到上方“快速接入”，重新复制并运行最新的一键命令。脚本会自动检测
-            {systemName} 已配置的 HTTP/Mixed 代理、验证 API 链路，并仅更新{' '}
-            <code className='text-foreground'>~/.claude/settings.json</code>。
+            {t(
+              'Check HTTP_PROXY and HTTPS_PROXY in the terminal and Claude settings. Remove unavailable proxy entries if you intend to connect directly; rerunning setup alone does not remove previously saved proxies.'
+            )}
           </li>
           <li>
-            看到完成提示后，完全退出 Claude Code，关闭原终端，再打开新的
-            PowerShell 运行 <code className='text-foreground'>claude</code>。
+            {t(
+              'After setup, fully exit Claude Code and open a new terminal before trying again.'
+            )}
           </li>
           <li>
-            使用期间不要断开代理。若自动检测不到 PAC
-            或自定义代理，可按脚本提示设置{' '}
-            <code className='text-foreground'>ANYROUTERS_PROXY</code>
-            后重跑；不要把 SOCKS 端口当作 HTTP 端口。
+            {t(
+              'For HTML 403 responses or connection timeouts, check the full request URL and the client proxy settings. Send support the error, request time and request ID if available; do not send your API key.'
+            )}
           </li>
         </ol>
-        <p className='mt-3 font-medium'>
-          正常判断标准：直连可能返回 HTML 403，但通过代理访问接口应返回 JSON；
-          未携带 Key 的检查返回 JSON 401 也表示网络链路已经正常。
+        <p className='mt-3'>
+          {t(
+            'A JSON 401 response without a key means the API is reachable. Add a valid key to authenticate.'
+          )}
         </p>
       </div>
     </section>
@@ -2083,6 +2048,12 @@ type GuideEntry = {
 
 const GUIDES: GuideEntry[] = [
   {
+    id: 'api',
+    label: 'API integration guide',
+    icon: Braces,
+    render: () => <ApiAccessGuide />,
+  },
+  {
     id: 'claude-code',
     label: 'Claude Code-终端版',
     icon: SquareTerminal,
@@ -2171,7 +2142,8 @@ const GUIDES: GuideEntry[] = [
 ]
 
 export function Docs() {
-  const [active, setActive] = useState('codex-desktop')
+  const { t } = useTranslation()
+  const [active, setActive] = useState('api')
   const [apiKey, setApiKey] = useState('')
   const activeGuide = GUIDES.find((guide) => guide.id === active) ?? GUIDES[0]
 
@@ -2198,7 +2170,11 @@ export function Docs() {
                   )}
                 >
                   <Icon className='size-4 shrink-0' />
-                  <span className='truncate'>{guide.label}</span>
+                  <span className='truncate'>
+                    {guide.id === 'api'
+                      ? t('API integration guide')
+                      : guide.label}
+                  </span>
                 </button>
               )
             })}
@@ -2219,7 +2195,7 @@ export function Docs() {
                     : 'text-muted-foreground'
                 )}
               >
-                {guide.label}
+                {guide.id === 'api' ? t('API integration guide') : guide.label}
               </button>
             ))}
           </div>

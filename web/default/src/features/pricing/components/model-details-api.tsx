@@ -29,8 +29,8 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { BundledLanguage } from 'shiki/bundle/web'
+import { API_ORIGIN } from '@/lib/api-endpoints'
 import { cn } from '@/lib/utils'
-import { useStatus } from '@/hooks/use-status'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -239,53 +239,46 @@ function buildAnthropicSample(lang: Lang, ctx: SampleContext): string {
 }
 
 function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
-  const url = `${ctx.baseUrl}${ctx.endpointPath}?key=$${ctx.apiKeyEnv}`
+  const url = `${ctx.baseUrl}${ctx.endpointPath}`
   const userMessage = 'Explain quantum entanglement in one paragraph.'
-
+  const body = JSON.stringify(
+    { contents: [{ parts: [{ text: userMessage }] }] },
+    null,
+    2
+  )
   if (lang === 'curl') {
-    const body = JSON.stringify(
-      { contents: [{ parts: [{ text: userMessage }] }] },
-      null,
-      2
-    )
     return [
-      `curl '${url}' \\`,
-      `  -H 'Content-Type: application/json' \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `curl "${url}" \\`,
+      `  -H "x-goog-api-key: $${ctx.apiKeyEnv}" \\`,
+      `  -H "Content-Type: application/json" \\`,
+      `  -d '${body}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
-      'import google.generativeai as genai',
+      'import os',
+      'import requests',
       '',
-      `genai.configure(api_key="<YOUR_API_KEY>")`,
-      '',
-      `model = genai.GenerativeModel("${ctx.modelName}")`,
-      `response = model.generate_content("${userMessage}")`,
-      '',
-      `print(response.text)`,
-    ].join('\n')
-  }
-  if (lang === 'typescript') {
-    return [
-      `import { GoogleGenerativeAI } from '@google/generative-ai'`,
-      '',
-      `const genAI = new GoogleGenerativeAI(process.env.${ctx.apiKeyEnv}!)`,
-      `const model = genAI.getGenerativeModel({ model: '${ctx.modelName}' })`,
-      '',
-      `const result = await model.generateContent('${userMessage}')`,
-      `console.log(result.response.text())`,
+      'response = requests.post(',
+      `    "${url}",`,
+      `    headers={"x-goog-api-key": os.environ["${ctx.apiKeyEnv}"]},`,
+      `    json={"contents": [{"parts": [{"text": "${userMessage}"}]}]},`,
+      '    timeout=60,',
+      ')',
+      'response.raise_for_status()',
+      'print(response.json()["candidates"][0]["content"]["parts"][0]["text"])',
     ].join('\n')
   }
   return [
     `const response = await fetch('${url}', {`,
     `  method: 'POST',`,
-    `  headers: { 'Content-Type': 'application/json' },`,
-    `  body: JSON.stringify({`,
-    `    contents: [{ parts: [{ text: '${userMessage}' }] }],`,
-    `  }),`,
+    `  headers: {`,
+    `    'Content-Type': 'application/json',`,
+    `    'x-goog-api-key': process.env.${ctx.apiKeyEnv}${lang === 'typescript' ? '!' : ''},`,
+    `  },`,
+    `  body: JSON.stringify(${body}),`,
     `})`,
-    '',
+    `if (!response.ok) throw new Error(\`HTTP \${response.status}\`)`,
     `const data = await response.json()`,
     `console.log(data.candidates[0].content.parts[0].text)`,
   ].join('\n')
@@ -447,20 +440,7 @@ function CodeSamplesSection(props: {
   endpointMap: Record<string, { path?: string; method?: string }>
 }) {
   const { t } = useTranslation()
-  const { status } = useStatus()
-
-  const baseUrl = useMemo(() => {
-    const candidate =
-      (status as Record<string, unknown> | null)?.server_address ??
-      (status as Record<string, unknown> | null)?.serverAddress ??
-      (status?.data as Record<string, unknown> | undefined)?.server_address ??
-      (status?.data as Record<string, unknown> | undefined)?.serverAddress
-    if (candidate && typeof candidate === 'string') {
-      return candidate.replace(/\/$/, '')
-    }
-    if (typeof window !== 'undefined') return window.location.origin
-    return 'https://api.example.com'
-  }, [status])
+  const baseUrl = API_ORIGIN
 
   const endpoints = useMemo(() => {
     const types = props.model.supported_endpoint_types || []
@@ -534,7 +514,11 @@ function CodeSamplesSection(props: {
       </div>
 
       <div className='mt-3'>
-        <CodeBlock code={code} language={LANG_HIGHLIGHT[lang]}>
+        <CodeBlock
+          code={code}
+          language={LANG_HIGHLIGHT[lang]}
+          className='[&_pre]:overflow-x-auto'
+        >
           <CodeBlockCopyButton />
         </CodeBlock>
       </div>
