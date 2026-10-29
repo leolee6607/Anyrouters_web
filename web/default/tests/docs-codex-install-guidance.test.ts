@@ -111,15 +111,13 @@ test('Claude Code guide explains how to recover from a local context limit', () 
   )
 })
 
-test('Claude guide explains proxy behavior on both Windows and macOS', () => {
-  expect(source).toContain('function ClaudeProxyNotice()')
-  expect(source).toContain("const systemName = os === 'windows' ? 'Windows' : 'macOS'")
-  expect(source).toMatch(/TUN\/Fake-IP\s+或透明代理通常可直接使用/)
-  expect(source).toMatch(/macOS\s+已配置的 HTTP\/HTTPS 代理/)
-  expect(source).toContain('不会修改 {systemName}')
-  expect(source).toContain('Claude Code 不支持 SOCKS-only 或 PAC 地址')
-  expect(source).toContain('function ClaudeProxyFaq()')
-  expect(source).toContain('<SectionTitle>{systemName} 403 与代理排障</SectionTitle>')
+test('Claude guide recommends direct access and treats saved proxies as optional', () => {
+  expect(source).toContain('AnyRouters API requests can connect directly.')
+  expect(source).toContain('uses a proxy only when direct access fails and the proxy works')
+  expect(source).toContain('without /v1. Use an AnyRouters API key.')
+  expect(source).toContain('rerunning setup alone does not remove previously saved proxies')
+  expect(source).not.toContain('安装及后续使用期间都要保持代理软件连接')
+  expect(source).not.toContain('请先连接代理软件')
 })
 
 test('developer guides explain where commands run and where configuration is written', () => {
