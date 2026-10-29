@@ -79,7 +79,7 @@ func TestGPT6TextAndToolCallsAreBothPreserved(t *testing.T) {
 }
 
 func TestGPT6FamilyCapabilities(t *testing.T) {
-	for _, model := range []string{"gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol", "gpt-6-luna"} {
+	for _, model := range []string{"gpt-6-astra", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-sol", "gpt-6-luna"} {
 		t.Run(model, func(t *testing.T) {
 			require.True(t, ShouldChatCompletionsUseResponsesPolicy(model_setting.ChatCompletionsToResponsesPolicy{}, 3, constant.ChannelTypeAzure, model))
 			require.False(t, ShouldChatCompletionsUseResponsesPolicy(model_setting.ChatCompletionsToResponsesPolicy{}, 3, constant.ChannelTypeAws, model))
@@ -93,7 +93,7 @@ func TestGPT6FamilyCapabilities(t *testing.T) {
 			require.Error(t, err)
 			req.ReasoningEffort = "none"
 			got, err = ChatCompletionsRequestToResponsesRequest(req)
-			if model == "gpt-6-sol" || model == "gpt-6-luna" {
+			if model == "gpt-6-sol" || model == "gpt-6-luna" || model == "gpt-6.1-terra" {
 				require.NoError(t, err)
 				require.Equal(t, lo.ToPtr(0.7), got.Temperature)
 			} else {

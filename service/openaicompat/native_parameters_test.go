@@ -58,7 +58,7 @@ func TestNativeThinkingRejectsAmbiguityWithoutRetry(t *testing.T) {
 }
 
 func TestNativeSamplingAcrossFamiliesAndEndpoints(t *testing.T) {
-	for _, model := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6.1-sol"} {
+	for _, model := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-sol", "gpt-6-luna", "gpt-6-astra", "gpt-6.1-sol", "gpt-6.1-terra"} {
 		for _, effort := range []string{"", "low", "none"} {
 			t.Run(model+"/"+effort, func(t *testing.T) {
 				chat := &dto.GeneralOpenAIRequest{Model: model, ReasoningEffort: effort, Temperature: common.GetPointer(0.0), TopP: common.GetPointer(0.0), LogProbs: common.GetPointer(false), TopLogProbs: common.GetPointer(0)}

@@ -30,14 +30,14 @@ func ShouldChatCompletionsUseResponsesGlobal(channelID int, channelType int, mod
 // Match published IDs exactly; aliases on non-native providers have separate capabilities.
 func isGPT6Model(model string) bool {
 	switch model {
-	case "gpt-6-astra", "gpt-6-sol", "gpt-6.1-sol", "gpt-6-luna":
+	case "gpt-6-astra", "gpt-6-sol", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-luna":
 		return true
 	}
 	return false
 }
 
 func gpt6AllowsNoReasoning(model string) bool {
-	return model == "gpt-6-sol" || model == "gpt-6-luna"
+	return model == "gpt-6-sol" || model == "gpt-6-luna" || model == "gpt-6.1-terra"
 }
 
 // GPT-5.6 Luna/Terra Chat tools cannot be combined with reasoning. Responses
