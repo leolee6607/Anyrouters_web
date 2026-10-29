@@ -1,0 +1,13 @@
+{
+  "model": "gpt-6.1-terra",
+  "version": "2026-10-26",
+  "input": 1,
+  "output": 5,
+  "cache_read": 0.05,
+  "cache_write": 1.25,
+  "threshold": 272000,
+  "billing_expr": "len <= 272000 ? tier(\"standard\", p + cr * 0.05 + cc * 1.25 + c * 5) : tier(\"long_context\", p * 2 + cr * 0.1 + cc * 2.5 + c * 7.5)",
+  "source": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
+  "group_discount_reference": "gpt-6.1-sol",
+  "channel": 3
+}
